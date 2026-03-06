@@ -1,56 +1,6 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chicken Tycoon Online</title>
-    <style>
-        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
-        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
-        #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #5d4037; }
-        #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
-        
-        #chicken-container { height: 180px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 130px; cursor: pointer; user-select: none; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 5; }
-        .bounce { transform: scale(0.85); }
-
-        #golden-egg { 
-            position: absolute; width: 50px; cursor: pointer; display: none; 
-            filter: hue-rotate(50deg) brightness(1.5) drop-shadow(0 0 15px gold); z-index: 10;
-            animation: pulse 0.5s infinite alternate;
-        }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
-
-        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        h3 { margin: 0 0 10px 0; color: #f57f17; text-align: center; font-size: 16px; }
-        
-        #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        .rank-item { background: #fffde7; margin-bottom: 6px; padding: 10px; border-radius: 10px; list-style: none; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-
-        #btn-upgrade { background: #43a047; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 15px; box-shadow: 0 4px #2e7d32; margin-top: 10px; }
-        #btn-upgrade:active { transform: translateY(2px); box-shadow: 0 2px #2e7d32; }
-    </style>
-</head>
-<body>
-
-<div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
-<div id="header">CHICKEN TYCOON GLOBAL</div>
-<div id="stats">🥚 <span id="eggs">0</span></div>
-
-<div id="chicken-container">
-    <img id="golden-egg" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickGoldenEgg()">
-    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()">
-</div>
-
-<div id="menu">
-    <h3>🏆 Top Fazendeiros</h3>
-    <ul id="rank-list">Carregando...</ul>
-    <button id="btn-upgrade" onclick="buyAuto()">CONTRATAR AJUDANTE (+1/seg)<br>Preço: 🥚 <span id="cost">50</span></button>
-</div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -64,69 +14,77 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let data = { eggs: 0, auto: 0, cost: 50 };
+    // Inicialização dos dados (agora com totalClicks)
+    let data = { eggs: 0, totalClicks: 0, auto: 0, cost: 50 };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
     let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*1000);
     localStorage.setItem('chickenName', playerName);
 
-    const chickenImg = document.getElementById('chicken');
-    const goldenEgg = document.getElementById('golden-egg');
+    const globalRef = doc(db, "stats", "globalCounter");
 
+    // Monitor do Contador Global (Top da tela)
+    onSnapshot(globalRef, (docSnap) => {
+        if (docSnap.exists()) {
+            document.getElementById('global-total').innerText = docSnap.data().total.toLocaleString();
+        } else {
+            setDoc(globalRef, { total: 0 });
+        }
+    });
+
+    // Função para somar no Firebase (Mundial)
+    async function addGlobalClick(amount) {
+        try {
+            await updateDoc(globalRef, { total: increment(amount) });
+        } catch (e) {
+            await setDoc(globalRef, { total: increment(amount) }, { merge: true });
+        }
+    }
+
+    // --- CLIQUE NA GALINHA ---
     window.clickChicken = () => {
-        data.eggs++;
+        data.eggs++;         // Saldo para gastar
+        data.totalClicks++;  // Pontuação do Ranking (Nunca diminui)
         updateUI();
         
-        chickenImg.classList.add('bounce');
-        setTimeout(() => chickenImg.classList.remove('bounce'), 100);
+        const img = document.getElementById('chicken');
+        img.style.transform = "scale(0.85)";
+        setTimeout(() => img.style.transform = "scale(1)", 100);
 
-        // Incrementa o contador global no Firebase
-        saveGlobalClick(1);
+        addGlobalClick(1);
 
-        if(data.eggs % 20 === 0) saveOnline(); 
+        // Salva no ranking a cada 10 cliques
+        if(data.totalClicks % 10 === 0) saveOnline(); 
     };
 
     window.clickGoldenEgg = () => {
         data.eggs += 100;
-        goldenEgg.style.display = 'none';
-        saveGlobalClick(100);
+        data.totalClicks += 100;
+        document.getElementById('golden-egg').style.display = 'none';
+        addGlobalClick(100);
         updateUI();
         saveOnline();
     };
 
     window.buyAuto = () => {
         if(data.eggs >= data.cost) {
-            data.eggs -= data.cost;
+            data.eggs -= data.cost; // Diminui os ovos gastos
             data.auto++;
             data.cost = Math.floor(data.cost * 1.6);
             updateUI();
+            // Note que aqui NÃO mexemos no totalClicks, então o Ranking não cai!
             saveOnline();
         }
     };
 
-    // --- FUNÇÕES DO FIREBASE ---
-    async function saveGlobalClick(amount) {
-        const globalRef = doc(db, "stats", "globalCounter");
-        try {
-            await updateDoc(globalRef, { total: increment(amount) });
-        } catch (e) {
-            // Se o documento não existir, cria ele
-            await setDoc(globalRef, { total: amount }, { merge: true });
-        }
-    }
-
-    async function updateGlobalDisplay() {
-        const globalRef = doc(db, "stats", "globalCounter");
-        const snap = await getDoc(globalRef);
-        if(snap.exists()) {
-            document.getElementById('global-total').innerText = snap.data().total.toLocaleString();
-        }
-    }
-
     async function saveOnline() {
         localStorage.setItem('chickenSave', JSON.stringify(data));
-        await setDoc(doc(db, "leaderboard", playerName), { name: playerName, score: Math.floor(data.eggs) });
+        // Enviamos o "totalClicks" para o ranking, não o saldo de "eggs"
+        await setDoc(doc(db, "leaderboard", playerName), { 
+            name: playerName, 
+            score: Math.floor(data.totalClicks) 
+        });
         loadRanking();
     }
 
@@ -137,7 +95,7 @@
         list.innerHTML = "";
         snap.forEach(d => {
             const p = d.data();
-            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>🥚 ${p.score}</b></li>`;
+            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
         });
     }
 
@@ -146,29 +104,16 @@
         document.getElementById('cost').innerText = data.cost;
     }
 
-    // Intervalos
-    setInterval(updateGlobalDisplay, 5000); // Atualiza contador global a cada 5s
     setInterval(() => {
         if(data.auto > 0) {
             data.eggs += data.auto;
+            data.totalClicks += data.auto; // Ajudantes também contam pro ranking
+            addGlobalClick(data.auto);
             updateUI();
-            if(Math.random() < 0.05) saveOnline();
+            if(Math.random() < 0.1) saveOnline();
         }
     }, 1000);
 
-    // Ovo de Ouro
-    setInterval(() => {
-        if(Math.random() < 0.05) {
-            goldenEgg.style.left = (Math.random() * (window.innerWidth - 60)) + 'px';
-            goldenEgg.style.top = (Math.random() * 100) + 'px';
-            goldenEgg.style.display = 'block';
-            setTimeout(() => goldenEgg.style.display = 'none', 4000);
-        }
-    }, 10000);
-
     updateUI();
     loadRanking();
-    updateGlobalDisplay();
-</script>
-</body>
-    </html>
+            </script>
