@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chicken Tycoon - Idle</title>
+    <style>
+        body { margin: 0; background: #fdf6e3; font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; color: #5d4037; }
+        #header { background: #ffca28; width: 100%; text-align: center; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #stats { font-size: 24px; font-weight: bold; margin: 20px 0; }
+        
+        /* A Galinha */
+        #chicken-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; }
+        #chicken { width: 150px; cursor: pointer; transition: transform 0.1s; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #chicken:active { transform: scale(0.9); }
+
+        /* Loja e Ranking */
+        #menu { background: #fff; width: 100%; padding: 20px; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .shop-item { display: flex; justify-content: space-between; background: #fff3e0; margin: 5px 0; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; }
+        button { background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 10px; }
+        .tab-btn { background: #fb8c00; flex: 1; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <h2>CHICKEN TYCOON</h2>
+</div>
+
+<div id="stats">🥚 <span id="eggs">0</span></div>
+
+<div id="chicken-area">
+    <div id="chicken" onclick="clickChicken()" style="font-size: 100px; text-align: center;">🐔</div>
+</div>
+
+<div id="menu">
+    <div class="tabs">
+        <button class="tab-btn" onclick="showTab('shop')">LOJA</button>
+        <button class="tab-btn" onclick="showTab('leaderboard')">RANKING</button>
+    </div>
+
+    <div id="shop" class="tab-content active">
+        <div class="shop-item">
+            <span>Milho Melhorado (+1/clique)</span>
+            <button onclick="buyUpgrade('click')">Preço: <span id="cost-click">10</span></button>
+        </div>
+        <div class="shop-item">
+            <span>Fazendeiro Autônomo (+1 ovo/seg)</span>
+            <button onclick="buyUpgrade('auto')">Preço: <span id="cost-auto">50</span></button>
+        </div>
+    </div>
+
+    <div id="leaderboard" class="tab-content">
+        <ol id="rank-list" style="padding-left: 20px;">
+            <li>Você: <span id="rank-me">0</span> ovos</li>
+            <li>Galinha Rei: 100.000 ovos</li>
+            <li>Pinto Veloz: 50.000 ovos</li>
+            <li>Ovo de Ouro: 10.000 ovos</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+    let data = {
+        eggs: 0,
+        perClick: 1,
+        perSecond: 0,
+        costs: { click: 10, auto: 50 }
+    };
+
+    // Carregar save
+    const saved = localStorage.getItem('chickenSave');
+    if(saved) {
+        data = JSON.parse(saved);
+        updateUI();
+    }
+
+    function clickChicken() {
+        data.eggs += data.perClick;
+        updateUI();
+        save();
+    }
+
+    function buyUpgrade(type) {
+        if(data.eggs >= data.costs[type]) {
+            data.eggs -= data.costs[type];
+            if(type === 'click') {
+                data.perClick += 1;
+                data.costs.click = Math.floor(data.costs.click * 1.5);
+            } else {
+                data.perSecond += 1;
+                data.costs.auto = Math.floor(data.costs.auto * 1.6);
+            }
+            updateUI();
+            save();
+        } else {
+            alert("Ovos insuficientes!");
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('eggs').innerText = Math.floor(data.eggs);
+        document.getElementById('cost-click').innerText = data.costs.click;
+        document.getElementById('cost-auto').innerText = data.costs.auto;
+        document.getElementById('rank-me').innerText = Math.floor(data.eggs);
+    }
+
+    function save() {
+        localStorage.setItem('chickenSave', JSON.stringify(data));
+    }
+
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // Ganho passivo (Idle)
+    setInterval(() => {
+        if(data.perSecond > 0) {
+            data.eggs += data.perSecond / 10;
+            updateUI();
+        }
+    }, 100);
+
+    // Salvar a cada 30 segundos
+    setInterval(save, 30000);
+</script>
+
+</body>
+      </html>
