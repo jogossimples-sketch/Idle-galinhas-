@@ -6,24 +6,32 @@
     <title>Chicken Tycoon Online</title>
     <style>
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
-        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
-        #header { background: #fbc02d; width: 100%; text-align: center; padding: 10px; font-weight: bold; font-size: 20px; color: #5d4037; }
-        #stats { font-size: 35px; margin: 10px; font-weight: bold; color: #5d4037; }
+        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+        #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #5d4037; }
+        #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
         
-        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+        #chicken-container { height: 180px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 130px; cursor: pointer; user-select: none; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 5; }
         .bounce { transform: scale(0.8); }
 
+        #golden-egg { 
+            position: absolute; width: 50px; cursor: pointer; display: none; 
+            filter: hue-rotate(50deg) brightness(1.5) drop-shadow(0 0 15px gold); z-index: 10;
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-        
-        input#player-name { width: 100%; padding: 8px; border: 2px solid #fbc02d; border-radius: 8px; text-align: center; font-weight: bold; }
+        input#player-name { width: 100%; padding: 10px; border: 2px solid #fbc02d; border-radius: 12px; text-align: center; font-weight: bold; font-size: 14px; outline: none; box-sizing: border-box; }
         
         #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 8px; border-radius: 10px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 13px; }
+        .rank-item { background: #fffde7; margin-bottom: 6px; padding: 10px; border-radius: 10px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
 
-        .btn { color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .btn { color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px rgba(0,0,0,0.1); transition: 0.1s; }
+        .btn:active { transform: translateY(2px); box-shadow: none; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
+        h3 { margin: 0; font-size: 14px; color: #f57f17; text-align: center; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -33,22 +41,23 @@
 <div id="stats">🥚 <span id="eggs">0</span></div>
 
 <div id="chicken-container">
+    <img id="golden-egg" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickGoldenEgg()">
     <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()">
 </div>
 
 <div id="menu">
-    <input type="text" id="player-name" placeholder="Seu Nome no Ranking" onchange="changeName(this.value)">
+    <input type="text" id="player-name" placeholder="Digite seu Nome Aqui" onchange="changeName(this.value)">
     
-    <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO (+1 ovo/clique)<br>Preço: 🥚 <span id="click-cost">100</span></button>
-    <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE (+1/seg)<br>Preço: 🥚 <span id="auto-cost">50</span></button>
+    <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO (+1 p/ clique)<br>Preço: 🥚 <span id="click-cost">100</span></button>
+    <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE (+1 p/ seg)<br>Preço: 🥚 <span id="auto-cost">50</span></button>
 
-    <h3 style="margin:5px 0; font-size:14px; color:#f57f17; text-align:center;">🏆 TOP RANKING (Cliques Totais)</h3>
+    <h3>🏆 Ranking (Cliques Totais)</h3>
     <ul id="rank-list">Carregando...</ul>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -62,22 +71,30 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Dados iniciais
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100 };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
-    let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*100);
+    let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*1000);
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
+    const chickenImg = document.getElementById('chicken');
+    const goldenEgg = document.getElementById('golden-egg');
 
-    // Monitor Global
-    onSnapshot(globalRef, (s) => { if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); });
+    onSnapshot(globalRef, (s) => { 
+        if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); 
+        else setDoc(globalRef, {total: 0});
+    });
 
-    window.changeName = (val) => {
-        if(val.trim() !== "") {
-            playerName = val.substring(0, 15);
+    window.changeName = async (newName) => {
+        const cleanedName = newName.trim().substring(0, 15);
+        if(cleanedName !== "" && cleanedName !== playerName) {
+            const oldName = playerName;
+            // Deleta o antigo no Firebase
+            await deleteDoc(doc(db, "leaderboard", oldName));
+            
+            playerName = cleanedName;
             localStorage.setItem('chickenName', playerName);
             saveOnline();
         }
@@ -87,13 +104,20 @@
         data.eggs += data.clickPower;
         data.totalClicks += data.clickPower;
         updateUI();
-        
-        const img = document.getElementById('chicken');
-        img.classList.add('bounce');
-        setTimeout(() => img.classList.remove('bounce'), 100);
-
+        chickenImg.classList.add('bounce');
+        setTimeout(() => chickenImg.classList.remove('bounce'), 100);
         updateDoc(globalRef, { total: increment(data.clickPower) }).catch(() => setDoc(globalRef, {total: data.clickPower}, {merge:true}));
-        if(data.totalClicks % 20 === 0) saveOnline();
+        if(data.totalClicks % 15 === 0) saveOnline();
+    };
+
+    window.clickGoldenEgg = () => {
+        const bonus = 100 + (data.auto * 10);
+        data.eggs += bonus;
+        data.totalClicks += bonus;
+        goldenEgg.style.display = 'none';
+        updateDoc(globalRef, { total: increment(bonus) });
+        updateUI();
+        saveOnline();
     };
 
     window.buyClick = () => {
@@ -144,9 +168,21 @@
             data.eggs += data.auto;
             data.totalClicks += data.auto;
             updateUI();
-            if(Math.random() < 0.05) saveOnline();
+            if(Math.random() < 0.05) {
+                saveOnline();
+                updateDoc(globalRef, { total: increment(data.auto * 5) });
+            }
         }
     }, 1000);
+
+    setInterval(() => {
+        if(Math.random() < 0.1) {
+            goldenEgg.style.left = Math.random() * (window.innerWidth - 60) + 'px';
+            goldenEgg.style.top = Math.random() * 100 + 'px';
+            goldenEgg.style.display = 'block';
+            setTimeout(() => goldenEgg.style.display = 'none', 4000);
+        }
+    }, 15000);
 
     updateUI();
     loadRanking();
