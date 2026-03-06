@@ -6,53 +6,51 @@
     <title>Chicken Tycoon Online</title>
     <style>
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #5d4037; }
-        #stats { font-size: 40px; margin: 15px; font-weight: bold; color: #5d4037; display: flex; align-items: center; gap: 10px; }
+        #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
         
-        #chicken-container { height: 200px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 140px; cursor: pointer; user-select: none; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 5; }
-        
-        /* Animação de pulo da galinha */
+        #chicken-container { height: 180px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 130px; cursor: pointer; user-select: none; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 5; }
         .bounce { transform: scale(0.85); }
 
-        /* Ovo de Ouro Especial */
         #golden-egg { 
             position: absolute; width: 50px; cursor: pointer; display: none; 
-            filter: drop-shadow(0 0 10px gold); z-index: 10;
+            filter: hue-rotate(50deg) brightness(1.5) drop-shadow(0 0 15px gold); z-index: 10;
             animation: pulse 0.5s infinite alternate;
         }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 20px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        h3 { margin: 0 0 15px 0; color: #f57f17; text-align: center; font-size: 18px; }
+        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        h3 { margin: 0 0 10px 0; color: #f57f17; text-align: center; font-size: 16px; }
         
         #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        .rank-item { background: #fffde7; margin-bottom: 8px; padding: 12px; border-radius: 12px; list-style: none; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; align-items: center; }
-        .rank-item b { color: #e65100; font-size: 16px; }
+        .rank-item { background: #fffde7; margin-bottom: 6px; padding: 10px; border-radius: 10px; list-style: none; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
 
-        #btn-upgrade { background: #43a047; color: white; border: none; padding: 18px; border-radius: 15px; width: 100%; font-weight: bold; font-size: 16px; box-shadow: 0 4px #2e7d32; transition: 0.1s; margin-top: 10px; }
-        #btn-upgrade:active { transform: translateY(4px); box-shadow: 0 0 transparent; }
+        #btn-upgrade { background: #43a047; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 15px; box-shadow: 0 4px #2e7d32; margin-top: 10px; }
+        #btn-upgrade:active { transform: translateY(2px); box-shadow: 0 2px #2e7d32; }
     </style>
 </head>
 <body>
 
+<div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
 <div id="header">CHICKEN TYCOON GLOBAL</div>
 <div id="stats">🥚 <span id="eggs">0</span></div>
 
 <div id="chicken-container">
-    <img id="golden-egg" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" style="filter: hue-rotate(50deg) brightness(1.5) drop-shadow(0 0 15px gold);" onclick="clickGoldenEgg()">
-    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()" alt="Galinha">
+    <img id="golden-egg" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickGoldenEgg()">
+    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()">
 </div>
 
 <div id="menu">
-    <h3>🏆 Ranking de Fazendeiros</h3>
-    <ul id="rank-list">Carregando ranking...</ul>
+    <h3>🏆 Top Fazendeiros</h3>
+    <ul id="rank-list">Carregando...</ul>
     <button id="btn-upgrade" onclick="buyAuto()">CONTRATAR AJUDANTE (+1/seg)<br>Preço: 🥚 <span id="cost">50</span></button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -80,19 +78,21 @@
         data.eggs++;
         updateUI();
         
-        // Efeito visual de pulo
         chickenImg.classList.add('bounce');
         setTimeout(() => chickenImg.classList.remove('bounce'), 100);
 
-        if(data.eggs % 25 === 0) saveOnline(); 
+        // Incrementa o contador global no Firebase
+        saveGlobalClick(1);
+
+        if(data.eggs % 20 === 0) saveOnline(); 
     };
 
     window.clickGoldenEgg = () => {
-        data.eggs += 100; // Bônus gigante!
+        data.eggs += 100;
         goldenEgg.style.display = 'none';
+        saveGlobalClick(100);
         updateUI();
         saveOnline();
-        alert("💥 BÔNUS! Você pegou o Ovo de Ouro (+100)!");
     };
 
     window.buyAuto = () => {
@@ -105,37 +105,40 @@
         }
     };
 
-    // Lógica para o Ovo de Ouro aparecer raramente
-    setInterval(() => {
-        if(Math.random() < 0.05) { // 5% de chance a cada 10 segundos
-            const x = Math.random() * (window.innerWidth - 60);
-            const y = Math.random() * 100;
-            goldenEgg.style.left = x + 'px';
-            goldenEgg.style.top = y + 'px';
-            goldenEgg.style.display = 'block';
-            setTimeout(() => goldenEgg.style.display = 'none', 4000); // Some após 4 seg
+    // --- FUNÇÕES DO FIREBASE ---
+    async function saveGlobalClick(amount) {
+        const globalRef = doc(db, "stats", "globalCounter");
+        try {
+            await updateDoc(globalRef, { total: increment(amount) });
+        } catch (e) {
+            // Se o documento não existir, cria ele
+            await setDoc(globalRef, { total: amount }, { merge: true });
         }
-    }, 10000);
+    }
+
+    async function updateGlobalDisplay() {
+        const globalRef = doc(db, "stats", "globalCounter");
+        const snap = await getDoc(globalRef);
+        if(snap.exists()) {
+            document.getElementById('global-total').innerText = snap.data().total.toLocaleString();
+        }
+    }
 
     async function saveOnline() {
         localStorage.setItem('chickenSave', JSON.stringify(data));
-        try {
-            await setDoc(doc(db, "leaderboard", playerName), { name: playerName, score: Math.floor(data.eggs) });
-            loadRanking();
-        } catch (e) { console.error(e); }
+        await setDoc(doc(db, "leaderboard", playerName), { name: playerName, score: Math.floor(data.eggs) });
+        loadRanking();
     }
 
     async function loadRanking() {
-        try {
-            const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-            const snap = await getDocs(q);
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const p = d.data();
-                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>🥚 ${p.score}</b></li>`;
-            });
-        } catch (e) { console.error(e); }
+        const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+        const snap = await getDocs(q);
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const p = d.data();
+            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>🥚 ${p.score}</b></li>`;
+        });
     }
 
     function updateUI() {
@@ -143,16 +146,29 @@
         document.getElementById('cost').innerText = data.cost;
     }
 
+    // Intervalos
+    setInterval(updateGlobalDisplay, 5000); // Atualiza contador global a cada 5s
     setInterval(() => {
         if(data.auto > 0) {
             data.eggs += data.auto;
             updateUI();
-            if(Math.random() < 0.03) saveOnline();
+            if(Math.random() < 0.05) saveOnline();
         }
     }, 1000);
 
+    // Ovo de Ouro
+    setInterval(() => {
+        if(Math.random() < 0.05) {
+            goldenEgg.style.left = (Math.random() * (window.innerWidth - 60)) + 'px';
+            goldenEgg.style.top = (Math.random() * 100) + 'px';
+            goldenEgg.style.display = 'block';
+            setTimeout(() => goldenEgg.style.display = 'none', 4000);
+        }
+    }, 10000);
+
     updateUI();
     loadRanking();
+    updateGlobalDisplay();
 </script>
 </body>
     </html>
