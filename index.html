@@ -56,7 +56,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // DADOS DO JOGO
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100 };
+    let pendingClicks = 0; 
+
+    // CARREGAR JOGO SALVO LOCALMENTE
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -65,28 +69,64 @@
 
     const globalRef = doc(db, "stats", "globalCounter");
 
+    // ESCUTAR CONTADOR GLOBAL
     onSnapshot(globalRef, (s) => { 
         if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); 
     });
 
+    // --- FUNÇÕES DE SALVAMENTO ---
+
+    // 1. SALVA NO CELULAR (Instante)
+    function saveLocal() {
+        localStorage.setItem('chickenSave', JSON.stringify(data));
+        updateUI();
+    }
+
+    // 2. SALVA NO RANKING (A cada 30 segundos - Para economizar Firebase)
+    async function syncWithServer() {
+        if (data.totalClicks > 0) {
+            try {
+                await setDoc(doc(db, "ranking_geral", playerName), { 
+                    name: playerName, 
+                    score: Math.floor(data.totalClicks) 
+                });
+                
+                if (pendingClicks > 0) {
+                    await updateDoc(globalRef, { total: increment(pendingClicks) }).catch(() => {
+                        setDoc(globalRef, { total: data.totalClicks }, { merge: true });
+                    });
+                    pendingClicks = 0;
+                }
+                loadRanking();
+            } catch (e) {
+                console.log("Aguardando reset do limite diário do Firebase...");
+            }
+        }
+    }
+
+    // --- AÇÕES DO JOGADOR ---
+
     window.changeName = async (newName) => {
         const cleaned = newName.trim().substring(0, 15);
         if(cleaned !== "" && cleaned !== playerName) {
-            await deleteDoc(doc(db, "ranking_geral", playerName)).catch(()=>{});
+            const oldName = playerName;
             playerName = cleaned;
             localStorage.setItem('chickenName', playerName);
-            saveOnline();
+            saveLocal();
+            await deleteDoc(doc(db, "ranking_geral", oldName)).catch(()=>{});
+            syncWithServer();
         }
     };
 
     window.clickChicken = () => {
         data.eggs += data.clickPower;
         data.totalClicks += data.clickPower;
-        updateUI();
+        pendingClicks += data.clickPower;
+        
+        saveLocal(); // Salva no celular na hora!
+
         document.getElementById('chicken').classList.add('bounce');
         setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
-        updateDoc(globalRef, { total: increment(data.clickPower) }).catch(() => setDoc(globalRef, {total: data.clickPower}));
-        if(data.totalClicks % 5 === 0) saveOnline();
     };
 
     window.buyClick = () => {
@@ -94,8 +134,7 @@
             data.eggs -= data.clickCost;
             data.clickPower++;
             data.clickCost = Math.floor(data.clickCost * 2.5);
-            updateUI();
-            saveOnline();
+            saveLocal(); // Salva no celular na hora!
         }
     };
 
@@ -104,26 +143,23 @@
             data.eggs -= data.autoCost;
             data.auto++;
             data.autoCost = Math.floor(data.autoCost * 1.6);
-            updateUI();
-            saveOnline();
+            saveLocal(); // Salva no celular na hora!
         }
     };
 
-    async function saveOnline() {
-        localStorage.setItem('chickenSave', JSON.stringify(data));
-        await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
-        loadRanking();
-    }
-
     async function loadRanking() {
-        const q = query(collection(db, "ranking_geral"), orderBy("score", "desc"), limit(10));
-        const snap = await getDocs(q);
-        const list = document.getElementById('rank-list');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const p = d.data();
-            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
-        });
+        try {
+            const q = query(collection(db, "ranking_geral"), orderBy("score", "desc"), limit(10));
+            const snap = await getDocs(q);
+            const list = document.getElementById('rank-list');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const p = d.data();
+                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
+            });
+        } catch (e) {
+            document.getElementById('rank-list').innerHTML = "Ranking em manutenção (limite diário).";
+        }
     }
 
     function updateUI() {
@@ -132,12 +168,15 @@
         document.getElementById('click-cost').innerText = data.clickCost;
     }
 
+    // INTERVALOS
+    setInterval(syncWithServer, 30000); // Sincroniza ranking a cada 30s
+    
     setInterval(() => {
         if(data.auto > 0) {
             data.eggs += data.auto;
             data.totalClicks += data.auto;
-            updateUI();
-            if(Math.random() < 0.1) saveOnline();
+            pendingClicks += data.auto;
+            saveLocal(); // Ajudantes também salvam localmente
         }
     }, 1000);
 
@@ -145,4 +184,4 @@
     loadRanking();
 </script>
 </body>
-    </html>
+        </html>
