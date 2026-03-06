@@ -8,47 +8,32 @@
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
         #stats-container { text-align: center; margin: 10px; }
         #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
         #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
-
-        /* Ícones Laterais */
         .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
         .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
-        
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
-
-        /* Menus Flutuantes */
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
-
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
-
-        /* Filtros de Cores da Galinha */
         .color-white { filter: none; }
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
         .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
-
         .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
-
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-        
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-
         .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
         .buy-color-btn { padding: 5px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
-
-        #rank-list { padding: 0; margin: 0; list-style: none; }
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 13px; }
         h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
     </style>
@@ -68,44 +53,26 @@
 
 <div id="settings-menu" class="float-menu">
     <h4 style="margin:0 0 10px 0; font-size:14px;">Configurações</h4>
-    <label style="font-size: 12px; font-weight: bold;">
-        <input type="checkbox" id="toggle-effects" checked onchange="saveSettings()"> Mostrar efeitos (+1)
-    </label>
+    <label style="font-size: 12px; font-weight: bold;"><input type="checkbox" id="toggle-effects" checked onchange="saveSettings()"> Mostrar efeitos (+1)</label>
 </div>
 
 <div id="shop-menu" class="float-menu">
     <h4 style="margin:0 0 10px 0; font-size:14px; color:#f44336;">Loja de Cores</h4>
-    <div class="shop-item">
-        <span>⚪ Branca (1x)</span>
-        <button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button>
-    </div>
-    <div class="shop-item">
-        <span>🟤 Marrom (1.1x)</span>
-        <button class="buy-color-btn" onclick="buyColor('brown', 50000, 1.1)">50k</button>
-    </div>
-    <div class="shop-item">
-        <span>🔵 Azul (1.25x)</span>
-        <button class="buy-color-btn" onclick="buyColor('blue', 150000, 1.25)">150k</button>
-    </div>
-    <div class="shop-item">
-        <span>🟡 Ouro (1.5x)</span>
-        <button class="buy-color-btn" onclick="buyColor('gold', 500000, 1.5)">500k</button>
-    </div>
+    <div class="shop-item"><span>⚪ Branca (1x)</span><button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button></div>
+    <div class="shop-item"><span>🟤 Marrom (2x)</span><button class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
+    <div class="shop-item"><span>🔵 Azul (4x)</span><button class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
+    <div class="shop-item"><span>🟡 Ouro (8x)</span><button class="buy-color-btn" onclick="buyColor('gold', 500000, 8)">500k</button></div>
 </div>
 
-<div id="chicken-container">
-    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white" onclick="clickChicken(event)">
-</div>
+<div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white" onclick="clickChicken(event)"></div>
 
 <div id="menu">
     <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold; box-sizing:border-box;">
-    
     <div class="btn-grid">
-        <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ PRESTÍGIO: <span id="prestige-target">200k</span></button>
+        <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ PRESTÍGIO: <span id="prestige-target">250k</span></button>
         <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
         <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
-    
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list">Carregando...</ul>
 </div>
@@ -127,9 +94,8 @@
     const db = getFirestore(app);
 
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'] };
-    let pendingClicks = 0;
+    let pendingClicksForGlobal = 0; 
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
-    document.getElementById('toggle-effects').checked = showEffects;
 
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
@@ -171,9 +137,12 @@
         if (data.totalClicks > 0) {
             try {
                 await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
-                if (pendingClicks > 0) {
-                    await updateDoc(globalRef, { total: increment(pendingClicks) }).catch(() => setDoc(globalRef, { total: data.totalClicks }, { merge: true }));
-                    pendingClicks = 0;
+                if (pendingClicksForGlobal > 0) {
+                    const toAdd = Math.floor(pendingClicksForGlobal);
+                    pendingClicksForGlobal = 0;
+                    await updateDoc(globalRef, { total: increment(toAdd) }).catch(() => {
+                        setDoc(globalRef, { total: data.totalClicks }, { merge: true });
+                    });
                 }
                 loadRanking();
             } catch (e) {}
@@ -183,7 +152,10 @@
     window.clickChicken = (event) => {
         const bonus = Math.pow(2, data.prestige) * data.colorBonus;
         const gain = data.clickPower * bonus;
-        data.eggs += gain; data.totalClicks += gain; pendingClicks += gain;
+        data.eggs += gain; 
+        data.totalClicks += gain; 
+        pendingClicksForGlobal += gain; 
+        
         if (showEffects) createFloatingText(event.clientX, event.clientY, "+" + Math.floor(gain));
         saveLocal();
         document.getElementById('chicken').classList.add('bounce');
@@ -199,10 +171,10 @@
     }
 
     window.doPrestige = () => {
-        const targets = [200000, 500000, 1000000];
+        const targets = [250000, 500000, 1000000]; // Novo alvo: 250k
         if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
             data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
-            saveLocal(); syncWithServer();
+            saveLocal();
         }
     };
 
@@ -228,14 +200,11 @@
         document.getElementById('click-cost').innerText = data.clickCost;
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
-
-        const targets = [200000, 500000, 1000000];
+        const targets = [250000, 500000, 1000000];
         if (data.prestige < 3) {
             document.getElementById('prestige-target').innerText = (targets[data.prestige] >= 1000000 ? "1M" : targets[data.prestige]/1000 + "k");
             document.getElementById('btn-prestige').style.display = data.totalClicks >= targets[data.prestige] ? 'block' : 'none';
-        } else {
-            document.getElementById('btn-prestige').style.display = 'none';
-        }
+        } else { document.getElementById('btn-prestige').style.display = 'none'; }
     }
 
     window.changeName = async (n) => {
@@ -245,22 +214,21 @@
             localStorage.setItem('chickenName', playerName);
             saveLocal();
             await deleteDoc(doc(db, "ranking_geral", old)).catch(()=>{});
-            syncWithServer();
         }
     };
 
-    setInterval(syncWithServer, 30000);
     setInterval(() => {
         if(data.auto > 0) {
-            const b = Math.pow(2, data.prestige);
+            const b = Math.pow(2, data.prestige) * data.colorBonus;
             const g = data.auto * b;
-            data.eggs += g; data.totalClicks += g; pendingClicks += g;
+            data.eggs += g; data.totalClicks += g; pendingClicksForGlobal += g; 
             saveLocal();
         }
     }, 1000);
 
+    setInterval(syncWithServer, 30000);
     updateUI();
     loadRanking();
 </script>
 </body>
-    </html>
+</html>
