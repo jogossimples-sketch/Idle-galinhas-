@@ -8,30 +8,32 @@
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
+        #stats { font-size: 32px; margin: 10px; font-weight: bold; color: #5d4037; text-align: center; }
+        #prestige-info { font-size: 14px; color: #f57f17; margin-bottom: 5px; }
         
-        /* Engrenagem e Menu de Config */
         #settings-icon { position: absolute; top: 50px; right: 15px; font-size: 24px; cursor: pointer; z-index: 100; filter: grayscale(1); opacity: 0.7; }
         #settings-menu { display: none; position: absolute; top: 85px; right: 15px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; }
 
-        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 2; }
+        #chicken-container { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 110px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
 
-        /* Animação do +1 */
         .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
-        @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-80px); opacity: 0; }
-        }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
 
-        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; }
+        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
         input#player-name { width: 100%; padding: 10px; border: 2px solid #fbc02d; border-radius: 10px; text-align: center; font-weight: bold; box-sizing: border-box; }
-        #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; list-style: none; }
-        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 14px; }
-        .btn { color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        
+        .btn { color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
+        
+        /* Botão de Prestígio */
+        #btn-prestige { background: #9c27b0; display: none; border: 2px solid #7b1fa2; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        #rank-list { padding: 0; margin: 0; list-style: none; }
+        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 13px; }
         h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
     </style>
 </head>
@@ -39,7 +41,10 @@
 
 <div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
 <div id="header">CHICKEN TYCOON</div>
-<div id="stats">🥚 <span id="eggs">0</span></div>
+<div id="stats">
+    <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
+    🥚 <span id="eggs">0</span>
+</div>
 
 <div id="settings-icon" onclick="toggleSettings()">⚙️</div>
 <div id="settings-menu">
@@ -54,8 +59,12 @@
 
 <div id="menu">
     <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)">
+    
+    <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ EVOLUIR (PRESTÍGIO)<br>Ganhe Bônus Permanente de 2x!</button>
+    
     <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO (+1)<br>Preço: 🥚 <span id="click-cost">100</span></button>
     <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE (+1/s)<br>Preço: 🥚 <span id="auto-cost">50</span></button>
+    
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list">Carregando...</ul>
 </div>
@@ -76,7 +85,17 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100 };
+    // DADOS INICIAIS
+    let data = { 
+        eggs: 0, 
+        totalClicks: 0, 
+        auto: 0, 
+        clickPower: 1, 
+        autoCost: 50, 
+        clickCost: 100,
+        prestige: 0 // Começa no nível 0
+    };
+
     let pendingClicks = 0;
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
     document.getElementById('toggle-effects').checked = showEffects;
@@ -119,17 +138,39 @@
                     pendingClicks = 0;
                 }
                 loadRanking();
-            } catch (e) { console.log("Limite Firebase ativo."); }
+            } catch (e) { console.log("Limite Firebase."); }
         }
     }
 
+    // LÓGICA DO PRESTÍGIO
+    window.doPrestige = () => {
+        if (data.totalClicks >= 200000 && data.prestige < 3) {
+            if(confirm("Deseja usar o PRESTÍGIO? Seus ovos e upgrades voltarão ao zero, mas você ganhará um bônus de 2x permanente!")) {
+                data.prestige += 1;
+                data.eggs = 0;
+                data.auto = 0;
+                data.clickPower = 1;
+                data.autoCost = 50;
+                data.clickCost = 100;
+                // O totalClicks não reseta para não perder o lugar no ranking!
+                saveLocal();
+                syncWithServer();
+                alert("EVOLUÇÃO CONCLUÍDA! Agora seus ganhos são muito maiores!");
+            }
+        }
+    };
+
     window.clickChicken = (event) => {
-        data.eggs += data.clickPower;
-        data.totalClicks += data.clickPower;
-        pendingClicks += data.clickPower;
+        // Multiplicador de prestígio (2x por nível)
+        const bonus = data.prestige > 0 ? (data.prestige * 2) : 1;
+        const gain = data.clickPower * bonus;
+
+        data.eggs += gain;
+        data.totalClicks += gain;
+        pendingClicks += gain;
         
         if (showEffects) {
-            createFloatingText(event.clientX, event.clientY, "+" + data.clickPower);
+            createFloatingText(event.clientX, event.clientY, "+" + gain);
         }
 
         saveLocal();
@@ -173,23 +214,45 @@
             list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
-                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
+                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${Math.floor(p.score)}</b></li>`;
             });
         } catch (e) { document.getElementById('rank-list').innerHTML = "Ranking em manutenção."; }
     }
 
     function updateUI() {
-        document.getElementById('eggs').innerText = Math.floor(data.eggs);
+        document.getElementById('eggs').innerText = Math.floor(data.eggs).toLocaleString();
         document.getElementById('auto-cost').innerText = data.autoCost;
         document.getElementById('click-cost').innerText = data.clickCost;
+        document.getElementById('prestige-lv').innerText = data.prestige;
+
+        // Mostrar botão de prestígio se chegar em 200k e não for nível 3
+        if (data.totalClicks >= 200000 && data.prestige < 3) {
+            document.getElementById('btn-prestige').style.display = 'block';
+        } else {
+            document.getElementById('btn-prestige').style.display = 'none';
+        }
     }
+
+    window.changeName = async (newName) => {
+        const cleaned = newName.trim().substring(0, 15);
+        if(cleaned !== "" && cleaned !== playerName) {
+            const oldName = playerName;
+            playerName = cleaned;
+            localStorage.setItem('chickenName', playerName);
+            saveLocal();
+            await deleteDoc(doc(db, "ranking_geral", oldName)).catch(()=>{});
+            syncWithServer();
+        }
+    };
 
     setInterval(syncWithServer, 30000);
     setInterval(() => {
         if(data.auto > 0) {
-            data.eggs += data.auto;
-            data.totalClicks += data.auto;
-            pendingClicks += data.auto;
+            const bonus = data.prestige > 0 ? (data.prestige * 2) : 1;
+            const gain = data.auto * bonus;
+            data.eggs += gain;
+            data.totalClicks += gain;
+            pendingClicks += gain;
             saveLocal();
         }
     }, 1000);
@@ -198,5 +261,4 @@
     loadRanking();
 </script>
 </body>
-</html> 
-                                                                                                                              </html>
+            </html>
