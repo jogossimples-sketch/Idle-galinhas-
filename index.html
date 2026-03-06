@@ -8,29 +8,45 @@
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #stats { font-size: 32px; margin: 10px; font-weight: bold; color: #5d4037; text-align: center; }
-        #prestige-info { font-size: 14px; color: #f57f17; margin-bottom: 5px; }
         
-        #settings-icon { position: absolute; top: 50px; right: 15px; font-size: 24px; cursor: pointer; z-index: 100; filter: grayscale(1); opacity: 0.7; }
-        #settings-menu { display: none; position: absolute; top: 85px; right: 15px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; }
+        #stats-container { text-align: center; margin: 10px; }
+        #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
+        #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-        #chicken-container { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 110px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 2; }
+        /* Ícones Laterais */
+        .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
+        .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
+        
+        #settings-btn { top: 50px; right: 15px; }
+        #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
+
+        /* Menus Flutuantes */
+        .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
+
+        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
 
-        .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+        /* Filtros de Cores da Galinha */
+        .color-white { filter: none; }
+        .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
+        .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
+        .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
+
+        .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
 
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-        input#player-name { width: 100%; padding: 10px; border: 2px solid #fbc02d; border-radius: 10px; text-align: center; font-weight: bold; box-sizing: border-box; }
         
-        .btn { color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
-        
-        /* Botão de Prestígio */
-        #btn-prestige { background: #9c27b0; display: none; border: 2px solid #7b1fa2; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
+        .buy-color-btn { padding: 5px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
 
         #rank-list { padding: 0; margin: 0; list-style: none; }
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 13px; }
@@ -41,29 +57,54 @@
 
 <div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
 <div id="header">CHICKEN TYCOON</div>
-<div id="stats">
+
+<div id="stats-container">
     <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
-    🥚 <span id="eggs">0</span>
+    <div id="stats">🥚 <span id="eggs">0</span></div>
 </div>
 
-<div id="settings-icon" onclick="toggleSettings()">⚙️</div>
-<div id="settings-menu">
-    <label style="font-size: 14px; font-weight: bold; color: #5d4037;">
+<div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
+<div id="shop-btn" class="icon-btn" onclick="toggleMenu('shop-menu')">🛒</div>
+
+<div id="settings-menu" class="float-menu">
+    <h4 style="margin:0 0 10px 0; font-size:14px;">Configurações</h4>
+    <label style="font-size: 12px; font-weight: bold;">
         <input type="checkbox" id="toggle-effects" checked onchange="saveSettings()"> Mostrar efeitos (+1)
     </label>
 </div>
 
+<div id="shop-menu" class="float-menu">
+    <h4 style="margin:0 0 10px 0; font-size:14px; color:#f44336;">Loja de Cores</h4>
+    <div class="shop-item">
+        <span>⚪ Branca (1x)</span>
+        <button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button>
+    </div>
+    <div class="shop-item">
+        <span>🟤 Marrom (1.1x)</span>
+        <button class="buy-color-btn" onclick="buyColor('brown', 50000, 1.1)">50k</button>
+    </div>
+    <div class="shop-item">
+        <span>🔵 Azul (1.25x)</span>
+        <button class="buy-color-btn" onclick="buyColor('blue', 150000, 1.25)">150k</button>
+    </div>
+    <div class="shop-item">
+        <span>🟡 Ouro (1.5x)</span>
+        <button class="buy-color-btn" onclick="buyColor('gold', 500000, 1.5)">500k</button>
+    </div>
+</div>
+
 <div id="chicken-container">
-    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken(event)">
+    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white" onclick="clickChicken(event)">
 </div>
 
 <div id="menu">
-    <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)">
+    <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold; box-sizing:border-box;">
     
-    <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ EVOLUIR (PRESTÍGIO)<br>Ganhe Bônus Permanente de 2x!</button>
-    
-    <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO (+1)<br>Preço: 🥚 <span id="click-cost">100</span></button>
-    <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE (+1/s)<br>Preço: 🥚 <span id="auto-cost">50</span></button>
+    <div class="btn-grid">
+        <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ PRESTÍGIO: <span id="prestige-target">200k</span></button>
+        <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
+        <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
+    </div>
     
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list">Carregando...</ul>
@@ -85,17 +126,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // DADOS INICIAIS
-    let data = { 
-        eggs: 0, 
-        totalClicks: 0, 
-        auto: 0, 
-        clickPower: 1, 
-        autoCost: 50, 
-        clickCost: 100,
-        prestige: 0 // Começa no nível 0
-    };
-
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'] };
     let pendingClicks = 0;
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
     document.getElementById('toggle-effects').checked = showEffects;
@@ -107,19 +138,28 @@
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
+    onSnapshot(globalRef, (s) => { if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); });
 
-    onSnapshot(globalRef, (s) => { 
-        if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); 
-    });
-
-    window.toggleSettings = () => {
-        const menu = document.getElementById('settings-menu');
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    window.toggleMenu = (id) => {
+        const menus = ['settings-menu', 'shop-menu'];
+        menus.forEach(m => {
+            const el = document.getElementById(m);
+            el.style.display = (m === id && el.style.display !== 'block') ? 'block' : 'none';
+        });
     };
 
     window.saveSettings = () => {
         showEffects = document.getElementById('toggle-effects').checked;
         localStorage.setItem('chickenEffects', showEffects);
+    };
+
+    window.buyColor = (col, price, bonus) => {
+        if (data.ownedColors.includes(col)) {
+            data.color = col; data.colorBonus = bonus;
+        } else if (data.eggs >= price) {
+            data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus;
+        } else { alert("Ovos insuficientes!"); }
+        saveLocal();
     };
 
     function saveLocal() {
@@ -132,47 +172,19 @@
             try {
                 await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
                 if (pendingClicks > 0) {
-                    await updateDoc(globalRef, { total: increment(pendingClicks) }).catch(() => {
-                        setDoc(globalRef, { total: data.totalClicks }, { merge: true });
-                    });
+                    await updateDoc(globalRef, { total: increment(pendingClicks) }).catch(() => setDoc(globalRef, { total: data.totalClicks }, { merge: true }));
                     pendingClicks = 0;
                 }
                 loadRanking();
-            } catch (e) { console.log("Limite Firebase."); }
+            } catch (e) {}
         }
     }
 
-    // LÓGICA DO PRESTÍGIO
-    window.doPrestige = () => {
-        if (data.totalClicks >= 200000 && data.prestige < 3) {
-            if(confirm("Deseja usar o PRESTÍGIO? Seus ovos e upgrades voltarão ao zero, mas você ganhará um bônus de 2x permanente!")) {
-                data.prestige += 1;
-                data.eggs = 0;
-                data.auto = 0;
-                data.clickPower = 1;
-                data.autoCost = 50;
-                data.clickCost = 100;
-                // O totalClicks não reseta para não perder o lugar no ranking!
-                saveLocal();
-                syncWithServer();
-                alert("EVOLUÇÃO CONCLUÍDA! Agora seus ganhos são muito maiores!");
-            }
-        }
-    };
-
     window.clickChicken = (event) => {
-        // Multiplicador de prestígio (2x por nível)
-        const bonus = data.prestige > 0 ? (data.prestige * 2) : 1;
+        const bonus = Math.pow(2, data.prestige) * data.colorBonus;
         const gain = data.clickPower * bonus;
-
-        data.eggs += gain;
-        data.totalClicks += gain;
-        pendingClicks += gain;
-        
-        if (showEffects) {
-            createFloatingText(event.clientX, event.clientY, "+" + gain);
-        }
-
+        data.eggs += gain; data.totalClicks += gain; pendingClicks += gain;
+        if (showEffects) createFloatingText(event.clientX, event.clientY, "+" + Math.floor(gain));
         saveLocal();
         document.getElementById('chicken').classList.add('bounce');
         setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
@@ -180,31 +192,22 @@
 
     function createFloatingText(x, y, text) {
         const el = document.createElement('div');
-        el.className = 'click-text';
-        el.innerText = text;
-        el.style.left = (x - 10) + "px";
-        el.style.top = (y - 20) + "px";
+        el.className = 'click-text'; el.innerText = text;
+        el.style.left = (x - 10) + "px"; el.style.top = (y - 20) + "px";
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 600);
     }
 
-    window.buyClick = () => {
-        if(data.eggs >= data.clickCost) {
-            data.eggs -= data.clickCost;
-            data.clickPower++;
-            data.clickCost = Math.floor(data.clickCost * 2.5);
-            saveLocal();
+    window.doPrestige = () => {
+        const targets = [200000, 500000, 1000000];
+        if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
+            data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
+            saveLocal(); syncWithServer();
         }
     };
 
-    window.buyAuto = () => {
-        if(data.eggs >= data.autoCost) {
-            data.eggs -= data.autoCost;
-            data.auto++;
-            data.autoCost = Math.floor(data.autoCost * 1.6);
-            saveLocal();
-        }
-    };
+    window.buyClick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 2.5); saveLocal(); } };
+    window.buyAuto = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 1.6); saveLocal(); } };
 
     async function loadRanking() {
         try {
@@ -214,9 +217,9 @@
             list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
-                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${Math.floor(p.score)}</b></li>`;
+                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${Math.floor(p.score).toLocaleString()}</b></li>`;
             });
-        } catch (e) { document.getElementById('rank-list').innerHTML = "Ranking em manutenção."; }
+        } catch (e) {}
     }
 
     function updateUI() {
@@ -224,23 +227,24 @@
         document.getElementById('auto-cost').innerText = data.autoCost;
         document.getElementById('click-cost').innerText = data.clickCost;
         document.getElementById('prestige-lv').innerText = data.prestige;
+        document.getElementById('chicken').className = "color-" + data.color;
 
-        // Mostrar botão de prestígio se chegar em 200k e não for nível 3
-        if (data.totalClicks >= 200000 && data.prestige < 3) {
-            document.getElementById('btn-prestige').style.display = 'block';
+        const targets = [200000, 500000, 1000000];
+        if (data.prestige < 3) {
+            document.getElementById('prestige-target').innerText = (targets[data.prestige] >= 1000000 ? "1M" : targets[data.prestige]/1000 + "k");
+            document.getElementById('btn-prestige').style.display = data.totalClicks >= targets[data.prestige] ? 'block' : 'none';
         } else {
             document.getElementById('btn-prestige').style.display = 'none';
         }
     }
 
-    window.changeName = async (newName) => {
-        const cleaned = newName.trim().substring(0, 15);
-        if(cleaned !== "" && cleaned !== playerName) {
-            const oldName = playerName;
-            playerName = cleaned;
+    window.changeName = async (n) => {
+        const c = n.trim().substring(0, 15);
+        if(c !== "" && c !== playerName) {
+            const old = playerName; playerName = c;
             localStorage.setItem('chickenName', playerName);
             saveLocal();
-            await deleteDoc(doc(db, "ranking_geral", oldName)).catch(()=>{});
+            await deleteDoc(doc(db, "ranking_geral", old)).catch(()=>{});
             syncWithServer();
         }
     };
@@ -248,11 +252,9 @@
     setInterval(syncWithServer, 30000);
     setInterval(() => {
         if(data.auto > 0) {
-            const bonus = data.prestige > 0 ? (data.prestige * 2) : 1;
-            const gain = data.auto * bonus;
-            data.eggs += gain;
-            data.totalClicks += gain;
-            pendingClicks += gain;
+            const b = Math.pow(2, data.prestige);
+            const g = data.auto * b;
+            data.eggs += g; data.totalClicks += g; pendingClicks += g;
             saveLocal();
         }
     }, 1000);
@@ -261,4 +263,4 @@
     loadRanking();
 </script>
 </body>
-            </html>
+    </html>
