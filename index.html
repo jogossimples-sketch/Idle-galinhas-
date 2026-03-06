@@ -14,7 +14,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Inicialização dos dados (agora com totalClicks)
     let data = { eggs: 0, totalClicks: 0, auto: 0, cost: 50 };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
@@ -22,65 +21,58 @@
     let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*1000);
     localStorage.setItem('chickenName', playerName);
 
-    const globalRef = doc(db, "stats", "globalCounter");
+    // --- LOGICA DO CONTADOR GLOBAL (BARRA MARROM) ---
+    const globalDocRef = doc(db, "stats", "globalCounter");
 
-    // Monitor do Contador Global (Top da tela)
-    onSnapshot(globalRef, (docSnap) => {
-        if (docSnap.exists()) {
-            document.getElementById('global-total').innerText = docSnap.data().total.toLocaleString();
+    // Fica vigiando o total mundial em tempo real
+    onSnapshot(globalDocRef, (snap) => {
+        if (snap.exists()) {
+            document.getElementById('global-total').innerText = snap.data().total.toLocaleString();
         } else {
-            setDoc(globalRef, { total: 0 });
+            setDoc(globalDocRef, { total: 0 }); // Cria se não existir
         }
     });
 
-    // Função para somar no Firebase (Mundial)
-    async function addGlobalClick(amount) {
+    async function syncGlobal(val) {
         try {
-            await updateDoc(globalRef, { total: increment(amount) });
-        } catch (e) {
-            await setDoc(globalRef, { total: increment(amount) }, { merge: true });
+            await updateDoc(globalDocRef, { total: increment(val) });
+        } catch(e) {
+            await setDoc(globalDocRef, { total: increment(val) }, { merge: true });
         }
     }
 
-    // --- CLIQUE NA GALINHA ---
+    // --- CLIQUES ---
     window.clickChicken = () => {
-        data.eggs++;         // Saldo para gastar
-        data.totalClicks++;  // Pontuação do Ranking (Nunca diminui)
+        data.eggs++;
+        data.totalClicks++;
         updateUI();
         
-        const img = document.getElementById('chicken');
-        img.style.transform = "scale(0.85)";
-        setTimeout(() => img.style.transform = "scale(1)", 100);
+        syncGlobal(1); // Manda +1 pro mundo todo
 
-        addGlobalClick(1);
-
-        // Salva no ranking a cada 10 cliques
-        if(data.totalClicks % 10 === 0) saveOnline(); 
+        if(data.totalClicks % 15 === 0) saveOnline();
     };
 
     window.clickGoldenEgg = () => {
         data.eggs += 100;
         data.totalClicks += 100;
         document.getElementById('golden-egg').style.display = 'none';
-        addGlobalClick(100);
+        syncGlobal(100); // Manda +100 pro mundo todo
         updateUI();
         saveOnline();
     };
 
     window.buyAuto = () => {
         if(data.eggs >= data.cost) {
-            data.eggs -= data.cost; // Diminui os ovos gastos
+            data.eggs -= data.cost;
             data.auto++;
             data.cost = Math.floor(data.cost * 1.6);
             updateUI();
-            // Note que aqui NÃO mexemos no totalClicks, então o Ranking não cai!
             saveOnline();
         }
     };
 
     async function saveOnline() {
         localStorage.setItem('chickenSave', JSON.stringify(data));
-        // Enviamos o "totalClicks" para o ranking, não o saldo de "eggs"
         await setDoc(doc(db, "leaderboard", playerName), { 
             name: playerName, 
             score: Math.floor(data.totalClicks) 
@@ -89,14 +81,16 @@
     }
 
     async function loadRanking() {
-        const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-        const snap = await getDocs(q);
-        const list = document.getElementById('rank-list');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const p = d.data();
-            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
-        });
+        try {
+            const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+            const snap = await getDocs(q);
+            const list = document.getElementById('rank-list');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const p = d.data();
+                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
+            });
+        } catch(e) {}
     }
 
     function updateUI() {
@@ -107,13 +101,13 @@
     setInterval(() => {
         if(data.auto > 0) {
             data.eggs += data.auto;
-            data.totalClicks += data.auto; // Ajudantes também contam pro ranking
-            addGlobalClick(data.auto);
+            data.totalClicks += data.auto;
+            syncGlobal(data.auto); // Ajudantes também somam pro mundo
             updateUI();
-            if(Math.random() < 0.1) saveOnline();
+            if(Math.random() < 0.05) saveOnline();
         }
     }, 1000);
 
     updateUI();
     loadRanking();
-            </script>
+        </script>
