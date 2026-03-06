@@ -6,6 +6,12 @@
     <title>Chicken Tycoon Online</title>
     <style>
         body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
+        
+        /* TELA DE LOADING */
+        #loadingScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.5s; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #f1c40f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #stats-container { text-align: center; margin: 10px; }
@@ -31,14 +37,17 @@
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
-        .buy-color-btn { padding: 5px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
-        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 13px; }
+        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
+        .rank-id { font-size: 9px; color: #999; display: block; }
         h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
     </style>
 </head>
 <body>
+
+<div id="loadingScreen">
+    <div class="spinner"></div>
+    <p style="color: white; font-family: sans-serif; margin-top: 15px; font-size: 11px; letter-spacing: 1px;">CARREGANDO FAZENDA...</p>
+</div>
 
 <div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
 <div id="header">CHICKEN TYCOON</div>
@@ -68,13 +77,15 @@
 
 <div id="menu">
     <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold; box-sizing:border-box;">
+    <div style="text-align: center; font-size: 9px; color: #999; margin-top: 4px;">ID: <span id="display-id">...</span></div>
+    
     <div class="btn-grid">
         <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ PRESTÍGIO: <span id="prestige-target">250k</span></button>
         <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
         <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
     <h3>🏆 RANKING GLOBAL</h3>
-    <ul id="rank-list">Carregando...</ul>
+    <ul id="rank-list" style="list-style: none; padding: 0;">Carregando...</ul>
 </div>
 
 <script type="module">
@@ -93,6 +104,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let playerID = localStorage.getItem('chickenID');
+    if (!playerID) {
+        playerID = "CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+        localStorage.setItem('chickenID', playerID);
+    }
+    document.getElementById('display-id').innerText = playerID;
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById("loadingScreen");
+            loader.style.opacity = "0";
+            setTimeout(() => loader.style.display = "none", 500);
+        }, 2000);
+    });
+
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'] };
     let pendingClicksForGlobal = 0; 
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
@@ -100,7 +126,7 @@
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
-    let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*100);
+    let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + playerID;
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
@@ -136,16 +162,22 @@
     async function syncWithServer() {
         if (data.totalClicks > 0) {
             try {
-                await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
+                // SALVA NA COLEÇÃO "Admin" USANDO O ID ÚNICO
+                await setDoc(doc(db, "Admin", playerID), { 
+                    name: playerName, 
+                    score: Math.floor(data.totalClicks),
+                    id: playerID 
+                }, { merge: true });
+
                 if (pendingClicksForGlobal > 0) {
                     const toAdd = Math.floor(pendingClicksForGlobal);
                     pendingClicksForGlobal = 0;
-                    await updateDoc(globalRef, { total: increment(toAdd) }).catch(() => {
-                        setDoc(globalRef, { total: data.totalClicks }, { merge: true });
+                    await updateDoc(globalRef, { total: increment(toAdd) }).catch(async () => {
+                        await setDoc(globalRef, { total: data.totalClicks }, { merge: true });
                     });
                 }
                 loadRanking();
-            } catch (e) {}
+            } catch (e) { console.error("Erro na sincronização"); }
         }
     }
 
@@ -171,10 +203,11 @@
     }
 
     window.doPrestige = () => {
-        const targets = [250000, 500000, 1000000]; // Novo alvo: 250k
+        const targets = [250000, 500000, 1000000];
         if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
             data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
             saveLocal();
+            syncWithServer(); // Sincroniza logo após prestígio
         }
     };
 
@@ -183,15 +216,21 @@
 
     async function loadRanking() {
         try {
-            const q = query(collection(db, "ranking_geral"), orderBy("score", "desc"), limit(10));
+            const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
             const snap = await getDocs(q);
             const list = document.getElementById('rank-list');
             list.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
-                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${Math.floor(p.score).toLocaleString()}</b></li>`;
+                list.innerHTML += `<li class="rank-item">
+                    <div>
+                        <b>${p.name}</b>
+                        <span class="rank-id">ID: #${p.id || '---'}</span>
+                    </div>
+                    <b>🥚 ${Math.floor(p.score).toLocaleString()}</b>
+                </li>`;
             });
-        } catch (e) {}
+        } catch (e) { console.error("Erro ao carregar ranking"); }
     }
 
     function updateUI() {
@@ -207,13 +246,13 @@
         } else { document.getElementById('btn-prestige').style.display = 'none'; }
     }
 
-    window.changeName = async (n) => {
+    window.changeName = (n) => {
         const c = n.trim().substring(0, 15);
         if(c !== "" && c !== playerName) {
-            const old = playerName; playerName = c;
+            playerName = c;
             localStorage.setItem('chickenName', playerName);
             saveLocal();
-            await deleteDoc(doc(db, "ranking_geral", old)).catch(()=>{});
+            syncWithServer();
         }
     };
 
@@ -226,7 +265,9 @@
         }
     }, 1000);
 
-    setInterval(syncWithServer, 30000);
+    // MANTIDO EM 30 SEGUNDOS PARA ECONOMIZAR COTA DO FIREBASE
+    setInterval(syncWithServer, 30000); 
+    
     updateUI();
     loadRanking();
 </script>
