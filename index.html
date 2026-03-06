@@ -5,13 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chicken Tycoon Online</title>
     <style>
-        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
+        
+        /* Engrenagem e Menu de Config */
+        #settings-icon { position: absolute; top: 50px; right: 15px; font-size: 24px; cursor: pointer; z-index: 100; filter: grayscale(1); opacity: 0.7; }
+        #settings-menu { display: none; position: absolute; top: 85px; right: 15px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; }
+
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
+
+        /* Animação do +1 */
+        .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 20px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; }
         input#player-name { width: 100%; padding: 10px; border: 2px solid #fbc02d; border-radius: 10px; text-align: center; font-weight: bold; box-sizing: border-box; }
         #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; list-style: none; }
@@ -28,8 +41,15 @@
 <div id="header">CHICKEN TYCOON</div>
 <div id="stats">🥚 <span id="eggs">0</span></div>
 
+<div id="settings-icon" onclick="toggleSettings()">⚙️</div>
+<div id="settings-menu">
+    <label style="font-size: 14px; font-weight: bold; color: #5d4037;">
+        <input type="checkbox" id="toggle-effects" checked onchange="saveSettings()"> Mostrar efeitos (+1)
+    </label>
+</div>
+
 <div id="chicken-container">
-    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()">
+    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken(event)">
 </div>
 
 <div id="menu">
@@ -56,11 +76,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // DADOS DO JOGO
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100 };
-    let pendingClicks = 0; 
+    let pendingClicks = 0;
+    let showEffects = localStorage.getItem('chickenEffects') !== 'false';
+    document.getElementById('toggle-effects').checked = showEffects;
 
-    // CARREGAR JOGO SALVO LOCALMENTE
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -69,28 +89,29 @@
 
     const globalRef = doc(db, "stats", "globalCounter");
 
-    // ESCUTAR CONTADOR GLOBAL
     onSnapshot(globalRef, (s) => { 
         if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); 
     });
 
-    // --- FUNÇÕES DE SALVAMENTO ---
+    window.toggleSettings = () => {
+        const menu = document.getElementById('settings-menu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    };
 
-    // 1. SALVA NO CELULAR (Instante)
+    window.saveSettings = () => {
+        showEffects = document.getElementById('toggle-effects').checked;
+        localStorage.setItem('chickenEffects', showEffects);
+    };
+
     function saveLocal() {
         localStorage.setItem('chickenSave', JSON.stringify(data));
         updateUI();
     }
 
-    // 2. SALVA NO RANKING (A cada 30 segundos - Para economizar Firebase)
     async function syncWithServer() {
         if (data.totalClicks > 0) {
             try {
-                await setDoc(doc(db, "ranking_geral", playerName), { 
-                    name: playerName, 
-                    score: Math.floor(data.totalClicks) 
-                });
-                
+                await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
                 if (pendingClicks > 0) {
                     await updateDoc(globalRef, { total: increment(pendingClicks) }).catch(() => {
                         setDoc(globalRef, { total: data.totalClicks }, { merge: true });
@@ -98,43 +119,40 @@
                     pendingClicks = 0;
                 }
                 loadRanking();
-            } catch (e) {
-                console.log("Aguardando reset do limite diário do Firebase...");
-            }
+            } catch (e) { console.log("Limite Firebase ativo."); }
         }
     }
 
-    // --- AÇÕES DO JOGADOR ---
-
-    window.changeName = async (newName) => {
-        const cleaned = newName.trim().substring(0, 15);
-        if(cleaned !== "" && cleaned !== playerName) {
-            const oldName = playerName;
-            playerName = cleaned;
-            localStorage.setItem('chickenName', playerName);
-            saveLocal();
-            await deleteDoc(doc(db, "ranking_geral", oldName)).catch(()=>{});
-            syncWithServer();
-        }
-    };
-
-    window.clickChicken = () => {
+    window.clickChicken = (event) => {
         data.eggs += data.clickPower;
         data.totalClicks += data.clickPower;
         pendingClicks += data.clickPower;
         
-        saveLocal(); // Salva no celular na hora!
+        if (showEffects) {
+            createFloatingText(event.clientX, event.clientY, "+" + data.clickPower);
+        }
 
+        saveLocal();
         document.getElementById('chicken').classList.add('bounce');
         setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
     };
+
+    function createFloatingText(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'click-text';
+        el.innerText = text;
+        el.style.left = (x - 10) + "px";
+        el.style.top = (y - 20) + "px";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 600);
+    }
 
     window.buyClick = () => {
         if(data.eggs >= data.clickCost) {
             data.eggs -= data.clickCost;
             data.clickPower++;
             data.clickCost = Math.floor(data.clickCost * 2.5);
-            saveLocal(); // Salva no celular na hora!
+            saveLocal();
         }
     };
 
@@ -143,7 +161,7 @@
             data.eggs -= data.autoCost;
             data.auto++;
             data.autoCost = Math.floor(data.autoCost * 1.6);
-            saveLocal(); // Salva no celular na hora!
+            saveLocal();
         }
     };
 
@@ -157,9 +175,7 @@
                 const p = d.data();
                 list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
             });
-        } catch (e) {
-            document.getElementById('rank-list').innerHTML = "Ranking em manutenção (limite diário).";
-        }
+        } catch (e) { document.getElementById('rank-list').innerHTML = "Ranking em manutenção."; }
     }
 
     function updateUI() {
@@ -168,15 +184,13 @@
         document.getElementById('click-cost').innerText = data.clickCost;
     }
 
-    // INTERVALOS
-    setInterval(syncWithServer, 30000); // Sincroniza ranking a cada 30s
-    
+    setInterval(syncWithServer, 30000);
     setInterval(() => {
         if(data.auto > 0) {
             data.eggs += data.auto;
             data.totalClicks += data.auto;
             pendingClicks += data.auto;
-            saveLocal(); // Ajudantes também salvam localmente
+            saveLocal();
         }
     }, 1000);
 
@@ -184,4 +198,5 @@
     loadRanking();
 </script>
 </body>
-        </html>
+</html> 
+                                                                                                                              </html>
