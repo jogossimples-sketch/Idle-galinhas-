@@ -1,8 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chicken Tycoon Online</title>
+    <style>
+        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
+        #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #stats { font-size: 40px; margin: 10px; font-weight: bold; color: #5d4037; }
+        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+        .bounce { transform: scale(0.8); }
+        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; }
+        input#player-name { width: 100%; padding: 10px; border: 2px solid #fbc02d; border-radius: 10px; text-align: center; font-weight: bold; box-sizing: border-box; }
+        #rank-list { padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; list-style: none; }
+        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 14px; }
+        .btn { color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        #btn-click { background: #0288d1; }
+        #btn-auto { background: #43a047; }
+        h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
+<div id="header">CHICKEN TYCOON</div>
+<div id="stats">🥚 <span id="eggs">0</span></div>
+
+<div id="chicken-container">
+    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" onclick="clickChicken()">
+</div>
+
+<div id="menu">
+    <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)">
+    <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO (+1)<br>Preço: 🥚 <span id="click-cost">100</span></button>
+    <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE (+1/s)<br>Preço: 🥚 <span id="auto-cost">50</span></button>
+    <h3>🏆 RANKING GLOBAL</h3>
+    <ul id="rank-list">Carregando...</ul>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Verifique se esses dados são EXATAMENTE os do seu Firebase Console
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
         authDomain: "chickentycoon.firebaseapp.com",
@@ -19,26 +60,22 @@
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
-    let playerName = localStorage.getItem('chickenName') || "Jogador_" + Math.floor(Math.random()*1000);
+    let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + Math.floor(Math.random()*100);
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
 
-    // Monitor do Contador Global
     onSnapshot(globalRef, (s) => { 
         if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); 
     });
 
     window.changeName = async (newName) => {
-        const cleanedName = newName.trim().substring(0, 15);
-        if(cleanedName !== "" && cleanedName !== playerName) {
-            try {
-                // Tenta deletar o antigo antes de mudar
-                await deleteDoc(doc(db, "ranking_geral", playerName));
-                playerName = cleanedName;
-                localStorage.setItem('chickenName', playerName);
-                saveOnline();
-            } catch(e) { console.log("Erro ao mudar nome"); }
+        const cleaned = newName.trim().substring(0, 15);
+        if(cleaned !== "" && cleaned !== playerName) {
+            await deleteDoc(doc(db, "ranking_geral", playerName)).catch(()=>{});
+            playerName = cleaned;
+            localStorage.setItem('chickenName', playerName);
+            saveOnline();
         }
     };
 
@@ -46,40 +83,66 @@
         data.eggs += data.clickPower;
         data.totalClicks += data.clickPower;
         updateUI();
-        
-        // Somar no Global
+        document.getElementById('chicken').classList.add('bounce');
+        setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
         updateDoc(globalRef, { total: increment(data.clickPower) }).catch(() => setDoc(globalRef, {total: data.clickPower}));
-
-        // Salvar no Ranking a cada 5 cliques (Para teste rápido)
         if(data.totalClicks % 5 === 0) saveOnline();
+    };
+
+    window.buyClick = () => {
+        if(data.eggs >= data.clickCost) {
+            data.eggs -= data.clickCost;
+            data.clickPower++;
+            data.clickCost = Math.floor(data.clickCost * 2.5);
+            updateUI();
+            saveOnline();
+        }
+    };
+
+    window.buyAuto = () => {
+        if(data.eggs >= data.autoCost) {
+            data.eggs -= data.autoCost;
+            data.auto++;
+            data.autoCost = Math.floor(data.autoCost * 1.6);
+            updateUI();
+            saveOnline();
+        }
     };
 
     async function saveOnline() {
         localStorage.setItem('chickenSave', JSON.stringify(data));
-        // Usando a nova coleção 'ranking_geral' para destravar
-        await setDoc(doc(db, "ranking_geral", playerName), { 
-            name: playerName, 
-            score: Math.floor(data.totalClicks) 
-        });
+        await setDoc(doc(db, "ranking_geral", playerName), { name: playerName, score: Math.floor(data.totalClicks) });
         loadRanking();
     }
 
     async function loadRanking() {
-        try {
-            const q = query(collection(db, "ranking_geral"), orderBy("score", "desc"), limit(10));
-            const snap = await getDocs(q);
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const p = d.data();
-                list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
-            });
-        } catch(e) { console.log("Erro ao carregar ranking"); }
+        const q = query(collection(db, "ranking_geral"), orderBy("score", "desc"), limit(10));
+        const snap = await getDocs(q);
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const p = d.data();
+            list.innerHTML += `<li class="rank-item"><span>${p.name}</span> <b>✨ ${p.score}</b></li>`;
+        });
     }
 
-    // ... Restante das funções de upgrade (buyAuto, buyClick, updateUI) mantidas iguais ...
-    // [MANTENHA AS FUNÇÕES buyAuto, buyClick E updateUI DO SEU CÓDIGO ANTERIOR AQUI]
-    
+    function updateUI() {
+        document.getElementById('eggs').innerText = Math.floor(data.eggs);
+        document.getElementById('auto-cost').innerText = data.autoCost;
+        document.getElementById('click-cost').innerText = data.clickCost;
+    }
+
+    setInterval(() => {
+        if(data.auto > 0) {
+            data.eggs += data.auto;
+            data.totalClicks += data.auto;
+            updateUI();
+            if(Math.random() < 0.1) saveOnline();
+        }
+    }, 1000);
+
     updateUI();
     loadRanking();
-                </script>
+</script>
+</body>
+    </html>
