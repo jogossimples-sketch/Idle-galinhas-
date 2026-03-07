@@ -90,7 +90,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -130,7 +130,16 @@
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
-    onSnapshot(globalRef, (s) => { if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); });
+    
+    // Função para atualizar o texto do global na tela sem usar onSnapshot tempo real
+    async function fetchGlobalStats() {
+        const snap = await getDoc(globalRef);
+        if(snap.exists()) document.getElementById('global-total').innerText = snap.data().total.toLocaleString();
+    }
+    // Primeira busca
+    fetchGlobalStats();
+    // Atualiza o display do contador global a cada 1 minuto
+    setInterval(fetchGlobalStats, 60000);
 
     window.toggleMenu = (id) => {
         const menus = ['settings-menu', 'shop-menu'];
@@ -265,8 +274,8 @@
         }
     }, 1000);
 
-    // MANTIDO EM 30 SEGUNDOS PARA ECONOMIZAR COTA DO FIREBASE
-    setInterval(syncWithServer, 30000); 
+    // MUDADO PARA 1 MINUTO (60000ms) CONFORME SOLICITADO
+    setInterval(syncWithServer, 60000); 
     
     updateUI();
     loadRanking();
