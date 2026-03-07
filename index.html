@@ -14,22 +14,24 @@
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        /* ESTILO DO PAINEL DE PERFIL */
-        #player-profile { background: #fff; border: 2px solid #fbc02d; border-radius: 15px; padding: 12px; margin: 5px 15px; text-align: left; box-shadow: 0 4px 0 #ffe0b2; width: 85%; max-width: 400px; z-index: 5; }
-        .profile-grid { font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; color: #5d4037; }
-
         #stats-container { text-align: center; margin: 10px; }
         #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
         #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
         .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
         .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
+        
+        /* POSIÇÕES DOS BOTÕES LATERAIS */
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
-        
-        #admin-btn { top: 170px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
+        #profile-btn { top: 170px; right: 15px; border-color: #0288d1; color: #0288d1; }
+        #admin-btn { top: 230px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
 
-        .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
+        .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
+        
+        /* AJUSTE DO PERFIL PARA JANELA FLUTUANTE */
+        .profile-grid { font-size: 13px; display: flex; flex-direction: column; gap: 8px; color: #5d4037; }
+
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
@@ -49,6 +51,7 @@
 
         .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
@@ -78,18 +81,19 @@
     <div id="stats">🥚 <span id="eggs">0</span></div>
 </div>
 
-<div id="player-profile">
-    <h4 style="margin: 0 0 8px 0; color: #f57f17; font-size: 14px; text-align: center;">📊 SEU PERFIL</h4>
+<div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
+<div id="shop-btn" class="icon-btn" onclick="toggleMenu('shop-menu')">🛒</div>
+<div id="profile-btn" class="icon-btn" onclick="toggleMenu('player-profile-menu')">📊</div>
+<div id="admin-btn" class="icon-btn" onclick="adminBanAction()">🚫</div>
+
+<div id="player-profile-menu" class="float-menu">
+    <h4 style="margin: 0 0 10px 0; color: #f57f17; text-align: center;">📊 SEU PERFIL</h4>
     <div class="profile-grid">
         <span>🕒 <b>Tempo:</b> <span id="p-time">0m</span></span>
         <span>🏅 <b>Prestígio:</b> <span id="p-prestige-panel">0</span></span>
-        <span style="grid-column: span 2;">🌟 <b>Total na Carreira:</b> <span id="p-total">0</span></span>
+        <span>🌟 <b>Total Carreira:</b><br><span id="p-total">0</span></span>
     </div>
 </div>
-
-<div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
-<div id="shop-btn" class="icon-btn" onclick="toggleMenu('shop-menu')">🛒</div>
-<div id="admin-btn" class="icon-btn" onclick="adminBanAction()">🚫</div>
 
 <div id="settings-menu" class="float-menu">
     <h4 style="margin:0 0 10px 0; font-size:14px;">Configurações</h4>
@@ -124,25 +128,13 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
-        authDomain: "chickentycoon.firebaseapp.com",
-        projectId: "chickentycoon",
-        storageBucket: "chickentycoon.firebasestorage.app",
-        messagingSenderId: "531618471959",
-        appId: "1:531618471959:web:5484bbd6dcca21e102462e"
-    };
-
+    const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
     const MY_ADMIN_ID = "CHICK-DJEU7";
 
-    let playerID = localStorage.getItem('chickenID');
-    if (!playerID) {
-        playerID = "CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase();
-        localStorage.setItem('chickenID', playerID);
-    }
+    let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
+    localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
     window.addEventListener('load', () => {
@@ -152,7 +144,6 @@
         }, 2000);
     });
 
-    // ADICIONADO STARTTIME AOS DADOS
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
     let pendingClicksForGlobal = 0; 
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
@@ -173,7 +164,7 @@
     setInterval(fetchGlobalStats, 60000);
 
     window.toggleMenu = (id) => {
-        const menus = ['settings-menu', 'shop-menu'];
+        const menus = ['settings-menu', 'shop-menu', 'player-profile-menu'];
         menus.forEach(m => {
             const el = document.getElementById(m);
             el.style.display = (m === id && el.style.display !== 'block') ? 'block' : 'none';
@@ -189,35 +180,22 @@
         const diff = Date.now() - start;
         const mins = Math.floor(diff / 60000);
         const hours = Math.floor(mins / 60);
-        const days = Math.floor(hours / 24);
-        if (days > 0) return `${days}d ${hours % 24}h`;
         if (hours > 0) return `${hours}h ${mins % 60}m`;
         return `${mins}m`;
     }
 
     window.buyColor = (col, price, bonus) => {
-        if (data.ownedColors.includes(col)) {
-            data.color = col; data.colorBonus = bonus;
-        } else if (data.eggs >= price) {
-            data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus;
-        } else { alert("Ovos insuficientes!"); }
+        if (data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; } 
+        else if (data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
         saveLocal();
     };
 
-    function saveLocal() {
-        localStorage.setItem('chickenSave', JSON.stringify(data));
-        updateUI();
-    }
+    function saveLocal() { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); }
 
     async function syncWithServer() {
         if (data.totalClicks > 0) {
             try {
-                await setDoc(doc(db, "Admin", playerID), { 
-                    name: playerName, 
-                    score: Math.floor(data.totalClicks),
-                    id: playerID 
-                }, { merge: true });
-
+                await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.floor(data.totalClicks), id: playerID }, { merge: true });
                 if (pendingClicksForGlobal > 0) {
                     const toAdd = Math.floor(pendingClicksForGlobal);
                     pendingClicksForGlobal = 0;
@@ -230,23 +208,17 @@
 
     window.adminBanAction = async () => {
         if (playerID !== MY_ADMIN_ID) return;
-        const target = prompt("Digite o ID do jogador para banir:");
-        if (target && confirm("Deseja banir #" + target + "?")) {
-            try {
-                await deleteDoc(doc(db, "Admin", target));
-                alert("Banido!");
-                loadRanking();
-            } catch (e) { alert("Erro: " + e); }
+        const target = prompt("ID para banir:");
+        if (target && confirm("Banir #" + target + "?")) {
+            await deleteDoc(doc(db, "Admin", target));
+            loadRanking();
         }
     };
 
     window.clickChicken = (event) => {
         const bonus = Math.pow(2, data.prestige) * data.colorBonus;
         const gain = data.clickPower * bonus;
-        data.eggs += gain; 
-        data.totalClicks += gain; 
-        pendingClicksForGlobal += gain; 
-        
+        data.eggs += gain; data.totalClicks += gain; pendingClicksForGlobal += gain; 
         if (showEffects) createFloatingText(event.clientX, event.clientY, "+" + Math.floor(gain));
         saveLocal();
         document.getElementById('chicken').classList.add('bounce');
@@ -265,8 +237,7 @@
         const targets = [250000, 500000, 1000000];
         if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
             data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
-            saveLocal();
-            syncWithServer();
+            saveLocal(); syncWithServer();
         }
     };
 
@@ -283,16 +254,8 @@
             snap.forEach(d => {
                 i++;
                 const p = d.data();
-                // LÓGICA DE MEDALHAS
-                let medal = "";
-                if(i === 1) medal = "🥇 ";
-                else if(i === 2) medal = "🥈 ";
-                else if(i === 3) medal = "🥉 ";
-
-                list.innerHTML += `<li class="rank-item">
-                    <div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div>
-                    <b>🥚 ${Math.floor(p.score).toLocaleString()}</b>
-                </li>`;
+                let medal = i === 1 ? "🥇 " : i === 2 ? "🥈 " : i === 3 ? "🥉 " : "";
+                list.innerHTML += `<li class="rank-item"><div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div><b>🥚 ${Math.floor(p.score).toLocaleString()}</b></li>`;
             });
         } catch (e) { console.error("Erro no Ranking"); }
     }
@@ -304,7 +267,6 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
 
-        // ATUALIZAÇÃO DO PAINEL DE PERFIL
         document.getElementById('p-time').innerText = formatTimePlayed(data.startTime);
         document.getElementById('p-prestige-panel').innerText = data.prestige;
         document.getElementById('p-total').innerText = Math.floor(data.totalClicks).toLocaleString();
@@ -312,15 +274,6 @@
         if (playerID === MY_ADMIN_ID) {
             document.getElementById('admin-btn').style.display = 'flex';
             document.getElementById('rainbow-item').style.display = 'flex';
-            if (!data.ownedColors.includes('rainbow')) {
-                data.ownedColors.push('rainbow');
-                saveLocal();
-            }
-        }
-
-        if (data.totalClicks >= 1000000) {
-            document.getElementById('rainbow-item').style.display = 'flex';
-            if (!data.ownedColors.includes('rainbow')) { data.ownedColors.push('rainbow'); saveLocal(); }
         }
 
         const targets = [250000, 500000, 1000000];
@@ -332,12 +285,7 @@
 
     window.changeName = (n) => {
         const c = n.trim().substring(0, 15);
-        if(c !== "" && c !== playerName) {
-            playerName = c;
-            localStorage.setItem('chickenName', playerName);
-            saveLocal();
-            syncWithServer();
-        }
+        if(c !== "" && c !== playerName) { playerName = c; localStorage.setItem('chickenName', playerName); saveLocal(); syncWithServer(); }
     };
 
     setInterval(() => {
@@ -350,9 +298,7 @@
     }, 1000);
 
     setInterval(syncWithServer, 60000); 
-    
-    updateUI();
-    loadRanking();
+    updateUI(); loadRanking();
 </script>
-</body> 
-</html>
+</body>
+    </html>
