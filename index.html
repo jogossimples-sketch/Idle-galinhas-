@@ -13,6 +13,11 @@
 
         #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
         #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* ESTILO DO PAINEL DE PERFIL */
+        #player-profile { background: #fff; border: 2px solid #fbc02d; border-radius: 15px; padding: 12px; margin: 5px 15px; text-align: left; box-shadow: 0 4px 0 #ffe0b2; width: 85%; max-width: 400px; z-index: 5; }
+        .profile-grid { font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; color: #5d4037; }
+
         #stats-container { text-align: center; margin: 10px; }
         #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
         #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -22,7 +27,6 @@
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
         
-        /* BOTÃO DE ADMIN */
         #admin-btn { top: 170px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
 
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
@@ -35,7 +39,6 @@
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
         .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
         
-        /* ANIMAÇÃO RAINBOW 20X */
         .color-rainbow { animation: rainbow-anim 2s linear infinite; }
         @keyframes rainbow-anim {
             0% { filter: hue-rotate(0deg) drop-shadow(0 0 10px red); }
@@ -73,6 +76,15 @@
 <div id="stats-container">
     <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
     <div id="stats">🥚 <span id="eggs">0</span></div>
+</div>
+
+<div id="player-profile">
+    <h4 style="margin: 0 0 8px 0; color: #f57f17; font-size: 14px; text-align: center;">📊 SEU PERFIL</h4>
+    <div class="profile-grid">
+        <span>🕒 <b>Tempo:</b> <span id="p-time">0m</span></span>
+        <span>🏅 <b>Prestígio:</b> <span id="p-prestige-panel">0</span></span>
+        <span style="grid-column: span 2;">🌟 <b>Total na Carreira:</b> <span id="p-total">0</span></span>
+    </div>
 </div>
 
 <div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
@@ -140,7 +152,8 @@
         }, 2000);
     });
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'] };
+    // ADICIONADO STARTTIME AOS DADOS
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
     let pendingClicksForGlobal = 0; 
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
 
@@ -172,6 +185,16 @@
         localStorage.setItem('chickenEffects', showEffects);
     };
 
+    function formatTimePlayed(start) {
+        const diff = Date.now() - start;
+        const mins = Math.floor(diff / 60000);
+        const hours = Math.floor(mins / 60);
+        const days = Math.floor(hours / 24);
+        if (days > 0) return `${days}d ${hours % 24}h`;
+        if (hours > 0) return `${hours}h ${mins % 60}m`;
+        return `${mins}m`;
+    }
+
     window.buyColor = (col, price, bonus) => {
         if (data.ownedColors.includes(col)) {
             data.color = col; data.colorBonus = bonus;
@@ -189,7 +212,6 @@
     async function syncWithServer() {
         if (data.totalClicks > 0) {
             try {
-                // Sincronização robusta para todos
                 await setDoc(doc(db, "Admin", playerID), { 
                     name: playerName, 
                     score: Math.floor(data.totalClicks),
@@ -257,10 +279,18 @@
             const snap = await getDocs(q);
             const list = document.getElementById('rank-list');
             list.innerHTML = "";
+            let i = 0;
             snap.forEach(d => {
+                i++;
                 const p = d.data();
+                // LÓGICA DE MEDALHAS
+                let medal = "";
+                if(i === 1) medal = "🥇 ";
+                else if(i === 2) medal = "🥈 ";
+                else if(i === 3) medal = "🥉 ";
+
                 list.innerHTML += `<li class="rank-item">
-                    <div><b>${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div>
+                    <div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div>
                     <b>🥚 ${Math.floor(p.score).toLocaleString()}</b>
                 </li>`;
             });
@@ -273,8 +303,12 @@
         document.getElementById('click-cost').innerText = data.clickCost;
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
+
+        // ATUALIZAÇÃO DO PAINEL DE PERFIL
+        document.getElementById('p-time').innerText = formatTimePlayed(data.startTime);
+        document.getElementById('p-prestige-panel').innerText = data.prestige;
+        document.getElementById('p-total').innerText = Math.floor(data.totalClicks).toLocaleString();
         
-        // RECURSOS EXCLUSIVOS ADMIN
         if (playerID === MY_ADMIN_ID) {
             document.getElementById('admin-btn').style.display = 'flex';
             document.getElementById('rainbow-item').style.display = 'flex';
@@ -284,7 +318,6 @@
             }
         }
 
-        // RECOMPENSA 1 MILHÃO
         if (data.totalClicks >= 1000000) {
             document.getElementById('rainbow-item').style.display = 'flex';
             if (!data.ownedColors.includes('rainbow')) { data.ownedColors.push('rainbow'); saveLocal(); }
@@ -321,5 +354,5 @@
     updateUI();
     loadRanking();
 </script>
-</body>
-    </html>
+</body> 
+</html>
