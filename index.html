@@ -1,6 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chicken Tycoon Online</title>
+    <style>
+        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; }
+        
+        /* TELA DE LOADING */
+        #loadingScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.5s; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #f1c40f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
+        #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #stats-container { text-align: center; margin: 10px; }
+        #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
+        #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
+        .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
+        #settings-btn { top: 50px; right: 15px; }
+        #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
+        .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
+        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
+        .bounce { transform: scale(0.8); }
+        .color-white { filter: none; }
+        .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
+        .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
+        .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
+        .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
+        #btn-click { background: #0288d1; }
+        #btn-auto { background: #43a047; }
+        #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
+        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
+        .rank-id { font-size: 9px; color: #999; display: block; }
+        h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="loadingScreen">
+    <div class="spinner"></div>
+    <p style="color: white; font-family: sans-serif; margin-top: 15px; font-size: 11px; letter-spacing: 1px;">CARREGANDO FAZENDA...</p>
+</div>
+
+<div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
+<div id="header">CHICKEN TYCOON</div>
+
+<div id="stats-container">
+    <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
+    <div id="stats">🥚 <span id="eggs">0</span></div>
+</div>
+
+<div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
+<div id="shop-btn" class="icon-btn" onclick="toggleMenu('shop-menu')">🛒</div>
+
+<div id="settings-menu" class="float-menu">
+    <h4 style="margin:0 0 10px 0; font-size:14px;">Configurações</h4>
+    <label style="font-size: 12px; font-weight: bold;"><input type="checkbox" id="toggle-effects" checked onchange="saveSettings()"> Mostrar efeitos (+1)</label>
+</div>
+
+<div id="shop-menu" class="float-menu">
+    <h4 style="margin:0 0 10px 0; font-size:14px; color:#f44336;">Loja de Cores</h4>
+    <div class="shop-item"><span>⚪ Branca (1x)</span><button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button></div>
+    <div class="shop-item"><span>🟤 Marrom (2x)</span><button class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
+    <div class="shop-item"><span>🔵 Azul (4x)</span><button class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
+    <div class="shop-item"><span>🟡 Ouro (8x)</span><button class="buy-color-btn" onclick="buyColor('gold', 500000, 8)">500k</button></div>
+</div>
+
+<div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white" onclick="clickChicken(event)"></div>
+
+<div id="menu">
+    <input type="text" id="player-name" placeholder="Seu Nome" onchange="changeName(this.value)" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold; box-sizing:border-box;">
+    <div style="text-align: center; font-size: 9px; color: #999; margin-top: 4px;">ID: <span id="display-id">...</span></div>
+    
+    <div class="btn-grid">
+        <button class="btn" id="btn-prestige" onclick="doPrestige()">✨ PRESTÍGIO: <span id="prestige-target">250k</span></button>
+        <button class="btn" id="btn-click" onclick="buyClick()">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
+        <button class="btn" id="btn-auto" onclick="buyAuto()">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
+    </div>
+    <h3>🏆 RANKING GLOBAL</h3>
+    <ul id="rank-list" style="list-style: none; padding: 0;">Carregando...</ul>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -40,9 +130,7 @@
     document.getElementById('player-name').value = playerName;
 
     const globalRef = doc(db, "stats", "globalCounter");
-
-    // MUDANÇA AQUI: Removi o onSnapshot (tempo real) para economizar cota.
-    // O total global agora será atualizado apenas dentro da função syncWithServer.
+    onSnapshot(globalRef, (s) => { if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); });
 
     window.toggleMenu = (id) => {
         const menus = ['settings-menu', 'shop-menu'];
@@ -71,10 +159,10 @@
         updateUI();
     }
 
-    // FUNÇÃO DE SINCRONIZAÇÃO (Agora rodando a cada 1 minuto)
     async function syncWithServer() {
         if (data.totalClicks > 0) {
             try {
+                // SALVA NA COLEÇÃO "Admin" USANDO O ID ÚNICO
                 await setDoc(doc(db, "Admin", playerID), { 
                     name: playerName, 
                     score: Math.floor(data.totalClicks),
@@ -88,11 +176,6 @@
                         await setDoc(globalRef, { total: data.totalClicks }, { merge: true });
                     });
                 }
-                
-                // Atualiza o contador global na barra superior após a gravação
-                const gSnap = await getDoc(globalRef);
-                if(gSnap.exists()) document.getElementById('global-total').innerText = gSnap.data().total.toLocaleString();
-                
                 loadRanking();
             } catch (e) { console.error("Erro na sincronização"); }
         }
@@ -124,7 +207,7 @@
         if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
             data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
             saveLocal();
-            syncWithServer(); 
+            syncWithServer(); // Sincroniza logo após prestígio
         }
     };
 
@@ -182,12 +265,11 @@
         }
     }, 1000);
 
-    // MUDANÇA PRINCIPAL: Tempo de sincronização mundial alterado para 1 minuto (60000ms)
-    setInterval(syncWithServer, 60000); 
+    // MANTIDO EM 30 SEGUNDOS PARA ECONOMIZAR COTA DO FIREBASE
+    setInterval(syncWithServer, 30000); 
     
     updateUI();
     loadRanking();
-    
-    // Chamada inicial para preencher o contador global ao abrir o jogo
-    getDoc(globalRef).then(s => { if(s.exists()) document.getElementById('global-total').innerText = s.data().total.toLocaleString(); });
-            </script>
+</script>
+</body>
+</html>
