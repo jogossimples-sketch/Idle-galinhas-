@@ -192,36 +192,43 @@
     async function syncWithServer() {
         if (data.totalClicks !== lastSavedScore) {
             try {
-                await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.floor(data.totalClicks), id: playerID }, { merge: true });
+                // CORREÇÃO: Força o score a ser um número inteiro puro (Number + trunc)
+                const finalScore = Math.trunc(Number(data.totalClicks));
+                
+                await setDoc(doc(db, "Admin", playerID), { 
+                    name: playerName, 
+                    score: finalScore, 
+                    id: playerID 
+                }, { merge: true });
+
                 if (pendingClicksForGlobal > 0) {
-                    const toAdd = Math.floor(pendingClicksForGlobal);
+                    const toAdd = Math.trunc(Number(pendingClicksForGlobal));
                     pendingClicksForGlobal = 0;
                     await setDoc(globalRef, { total: increment(toAdd) }, { merge: true });
                 }
                 lastSavedScore = data.totalClicks;
             } catch (e) { console.error("Erro na sincronização"); }
         }
-        await loadRanking(); // Força a esperar carregar depois de salvar
+        await loadRanking(); 
     }
 
     async function loadRanking() {
         const list = document.getElementById('rank-list');
-        list.innerHTML = `<li style="text-align: center; color: #999;">Atualizando...</li>`; // Aviso visual que está carregando
-
         try {
-            // query com fetch das opções mais recentes do banco
             const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
-            // getDocsFromServer bypassa o cache do firestore local
+            // CORREÇÃO: source: 'server' força a ignorar o cache local que trava em números altos
             const snap = await getDocs(q, { source: 'server' }); 
             
-            list.innerHTML = ""; // Esvazia de vez
+            list.innerHTML = ""; 
 
             let i = 0;
             snap.forEach(d => {
                 i++;
                 const p = d.data();
                 let medal = i === 1 ? "🥇 " : i === 2 ? "🥈 " : i === 3 ? "🥉 " : "";
-                list.innerHTML += `<li class="rank-item"><div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div><b>🥚 ${Math.floor(p.score).toLocaleString()}</b></li>`;
+                // CORREÇÃO: Garantindo que a exibição também trate o número corretamente
+                const scoreDisplay = Math.trunc(Number(p.score || 0)).toLocaleString();
+                list.innerHTML += `<li class="rank-item"><div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div><b>🥚 ${scoreDisplay}</b></li>`;
             });
         } catch (e) { console.error("Erro no Ranking"); list.innerHTML = "Erro ao carregar ranking."; }
     }
@@ -311,4 +318,4 @@
     updateUI(); loadRanking();
 </script>
 </body>
-  </html>
+    </html>
