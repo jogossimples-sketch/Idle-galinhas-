@@ -21,15 +21,12 @@
         .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
         .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
         
-        /* POSIÇÕES DOS BOTÕES LATERAIS */
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
         #profile-btn { top: 170px; right: 15px; border-color: #0288d1; color: #0288d1; }
         #admin-btn { top: 230px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
 
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
-        
-        /* AJUSTE DO PERFIL PARA JANELA FLUTUANTE */
         .profile-grid { font-size: 13px; display: flex; flex-direction: column; gap: 8px; color: #5d4037; }
 
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
@@ -40,7 +37,6 @@
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
         .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
-        
         .color-rainbow { animation: rainbow-anim 2s linear infinite; }
         @keyframes rainbow-anim {
             0% { filter: hue-rotate(0deg) drop-shadow(0 0 10px red); }
@@ -137,15 +133,9 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const loader = document.getElementById("loadingScreen");
-            if(loader) { loader.style.opacity = "0"; setTimeout(() => loader.style.display = "none", 500); }
-        }, 2000);
-    });
-
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
     let pendingClicksForGlobal = 0; 
+    let lastSavedScore = -1;
     let showEffects = localStorage.getItem('chickenEffects') !== 'false';
 
     const saved = localStorage.getItem('chickenSave');
@@ -156,6 +146,13 @@
 
     const globalRef = doc(db, "stats", "globalCounter");
     
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const loader = document.getElementById("loadingScreen");
+            if(loader) { loader.style.opacity = "0"; setTimeout(() => loader.style.display = "none", 500); }
+        }, 1500);
+    });
+
     async function fetchGlobalStats() {
         const snap = await getDoc(globalRef);
         if(snap.exists()) document.getElementById('global-total').innerText = snap.data().total.toLocaleString();
@@ -163,12 +160,20 @@
     fetchGlobalStats();
     setInterval(fetchGlobalStats, 60000);
 
-    window.toggleMenu = (id) => {
+    window.toggleMenu = async (id) => {
         const menus = ['settings-menu', 'shop-menu', 'player-profile-menu'];
+        const isOpening = document.getElementById(id).style.display !== 'block';
+        
         menus.forEach(m => {
             const el = document.getElementById(m);
-            el.style.display = (m === id && el.style.display !== 'block') ? 'block' : 'none';
+            el.style.display = (m === id && isOpening) ? 'block' : 'none';
         });
+
+        // Atualização sincronizada ao abrir Perfil
+        if (id === 'player-profile-menu' && isOpening) {
+            updateUI();
+            await syncWithServer(); 
+        }
     };
 
     window.saveSettings = () => {
@@ -180,20 +185,14 @@
         const diff = Date.now() - start;
         const mins = Math.floor(diff / 60000);
         const hours = Math.floor(mins / 60);
-        if (hours > 0) return `${hours}h ${mins % 60}m`;
-        return `${mins}m`;
+        return hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
     }
-
-    window.buyColor = (col, price, bonus) => {
-        if (data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; } 
-        else if (data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
-        saveLocal();
-    };
 
     function saveLocal() { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); }
 
     async function syncWithServer() {
-        if (data.totalClicks > 0) {
+        // Só salva se o score mudou (Economia de crédito)
+        if (data.totalClicks !== lastSavedScore) {
             try {
                 await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.floor(data.totalClicks), id: playerID }, { merge: true });
                 if (pendingClicksForGlobal > 0) {
@@ -201,48 +200,11 @@
                     pendingClicksForGlobal = 0;
                     await setDoc(globalRef, { total: increment(toAdd) }, { merge: true });
                 }
-                loadRanking();
+                lastSavedScore = data.totalClicks;
             } catch (e) { console.error("Erro na sincronização"); }
         }
+        loadRanking();
     }
-
-    window.adminBanAction = async () => {
-        if (playerID !== MY_ADMIN_ID) return;
-        const target = prompt("ID para banir:");
-        if (target && confirm("Banir #" + target + "?")) {
-            await deleteDoc(doc(db, "Admin", target));
-            loadRanking();
-        }
-    };
-
-    window.clickChicken = (event) => {
-        const bonus = Math.pow(2, data.prestige) * data.colorBonus;
-        const gain = data.clickPower * bonus;
-        data.eggs += gain; data.totalClicks += gain; pendingClicksForGlobal += gain; 
-        if (showEffects) createFloatingText(event.clientX, event.clientY, "+" + Math.floor(gain));
-        saveLocal();
-        document.getElementById('chicken').classList.add('bounce');
-        setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
-    };
-
-    function createFloatingText(x, y, text) {
-        const el = document.createElement('div');
-        el.className = 'click-text'; el.innerText = text;
-        el.style.left = (x - 10) + "px"; el.style.top = (y - 20) + "px";
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 600);
-    }
-
-    window.doPrestige = () => {
-        const targets = [250000, 500000, 1000000];
-        if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
-            data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
-            saveLocal(); syncWithServer();
-        }
-    };
-
-    window.buyClick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 2.5); saveLocal(); } };
-    window.buyAuto = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 1.6); saveLocal(); } };
 
     async function loadRanking() {
         try {
@@ -267,14 +229,21 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
 
+        // Atualiza Perfil
         document.getElementById('p-time').innerText = formatTimePlayed(data.startTime);
         document.getElementById('p-prestige-panel').innerText = data.prestige;
         document.getElementById('p-total').innerText = Math.floor(data.totalClicks).toLocaleString();
         
-        if (playerID === MY_ADMIN_ID) {
-            document.getElementById('admin-btn').style.display = 'flex';
+        // Rainbow Permanente (Ao chegar em 1M)
+        if (playerID === MY_ADMIN_ID || data.totalClicks >= 1000000 || data.ownedColors.includes('rainbow')) {
             document.getElementById('rainbow-item').style.display = 'flex';
+            if (!data.ownedColors.includes('rainbow') && data.totalClicks >= 1000000) {
+                data.ownedColors.push('rainbow');
+                localStorage.setItem('chickenSave', JSON.stringify(data));
+            }
         }
+
+        if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
 
         const targets = [250000, 500000, 1000000];
         if (data.prestige < 3) {
@@ -283,9 +252,48 @@
         } else { document.getElementById('btn-prestige').style.display = 'none'; }
     }
 
+    window.clickChicken = (event) => {
+        const bonus = Math.pow(2, data.prestige) * data.colorBonus;
+        const gain = data.clickPower * bonus;
+        data.eggs += gain; data.totalClicks += gain; pendingClicksForGlobal += gain; 
+        if (showEffects) createFloatingText(event.clientX, event.clientY, "+" + Math.floor(gain));
+        saveLocal();
+        document.getElementById('chicken').classList.add('bounce');
+        setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
+    };
+
+    function createFloatingText(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'click-text'; el.innerText = text;
+        el.style.left = (x - 10) + "px"; el.style.top = (y - 20) + "px";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 600);
+    }
+
+    window.buyColor = (col, price, bonus) => {
+        if (data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; } 
+        else if (data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
+        saveLocal();
+    };
+
+    window.doPrestige = () => {
+        const targets = [250000, 500000, 1000000];
+        if (data.totalClicks >= targets[data.prestige] && data.prestige < 3) {
+            data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.autoCost = 50; data.clickCost = 100;
+            saveLocal(); syncWithServer();
+        }
+    };
+
+    window.buyClick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 2.5); saveLocal(); } };
+    window.buyAuto = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 1.6); saveLocal(); } };
     window.changeName = (n) => {
         const c = n.trim().substring(0, 15);
         if(c !== "" && c !== playerName) { playerName = c; localStorage.setItem('chickenName', playerName); saveLocal(); syncWithServer(); }
+    };
+    window.adminBanAction = async () => {
+        if (playerID !== MY_ADMIN_ID) return;
+        const target = prompt("ID para banir:");
+        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); loadRanking(); }
     };
 
     setInterval(() => {
