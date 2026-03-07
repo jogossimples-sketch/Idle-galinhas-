@@ -3,58 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chicken Clicker</title>
+
+<title>Chicken Tycoon</title>
 
 <style>
 
 body{
-font-family:Arial;
-background:#fff8dc;
-text-align:center;
 margin:0;
+font-family:Arial;
+background:linear-gradient(#fff3b0,#ffd166);
+text-align:center;
 }
 
-#game{
-max-width:500px;
-margin:auto;
-padding:20px;
+header{
+background:#ffb703;
+padding:15px;
+font-size:26px;
+font-weight:bold;
 }
 
-h1{
-color:#8b4513;
+#score{
+font-size:36px;
+margin-top:20px;
 }
 
-#egg{
-font-size:40px;
-margin:10px;
+#chicken{
+width:150px;
+margin-top:20px;
+cursor:pointer;
+transition:0.1s;
+}
+
+#chicken:active{
+transform:scale(0.9);
+}
+
+.menu{
+margin-top:25px;
 }
 
 button{
-padding:15px;
-margin:10px;
+padding:12px;
+margin:6px;
 border:none;
 border-radius:10px;
-background:#ffcc00;
+background:#ffb703;
 font-weight:bold;
+font-size:14px;
 cursor:pointer;
 }
 
 button:hover{
-background:#ffdd33;
+background:#ffcc00;
 }
 
-#rank{
+#shop{
 margin-top:20px;
-text-align:left;
 }
 
-.rank-item{
-background:#fff;
-margin:5px;
+.card{
+background:white;
+padding:12px;
+margin:10px;
+border-radius:10px;
+max-width:300px;
+margin-left:auto;
+margin-right:auto;
+}
+
+#ranking{
+margin-top:20px;
+max-width:400px;
+margin-left:auto;
+margin-right:auto;
+}
+
+.rank{
+background:white;
 padding:8px;
+margin:5px;
 border-radius:6px;
 display:flex;
 justify-content:space-between;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+margin-top:10px;
 }
 
 </style>
@@ -62,45 +99,64 @@ justify-content:space-between;
 
 <body>
 
-<div id="game">
+<header>🐔 Chicken Tycoon</header>
 
-<h1>🐔 Chicken Clicker</h1>
+<div id="score">🥚 0</div>
 
-<div id="egg">🥚 0</div>
+<img id="chicken"
+src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png">
 
-<button onclick="clickEgg()">CLICAR</button>
+<div class="menu">
+
+<button onclick="buyClick()">💪 Melhorar clique</button>
+
+<button onclick="buyFarm()">🏭 Comprar fazenda</button>
+
+<button onclick="prestige()">✨ Prestígio</button>
+
+</div>
+
+<div id="shop">
+
+<div class="card">
+Clique Power: <span id="clickPower">1</span>
+</div>
+
+<div class="card">
+Fazendas: <span id="farm">0</span>
+</div>
+
+<div class="card">
+Prestígio: <span id="prestige">0</span>
+</div>
+
+</div>
+
+<h3>Salvar ranking</h3>
+
+<input id="playerName" placeholder="Seu nome">
 
 <br>
 
-<button onclick="buyClick()">Upgrade Clique</button>
-
-<button onclick="buyAuto()">Auto Farm</button>
-
-<br><br>
-
-<input id="name" placeholder="Seu nome">
-
-<button onclick="saveScore()">Salvar no Ranking</button>
+<button onclick="saveScore()">Enviar pontuação</button>
 
 <h3>🏆 Ranking</h3>
 
-<div id="rank">Carregando...</div>
-
-</div>
+<div id="ranking">Carregando...</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-import { 
+import {
 getFirestore,
-doc,
-setDoc,
 collection,
 query,
 orderBy,
 limit,
-getDocsFromServer
+getDocsFromServer,
+setDoc,
+doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 
@@ -124,62 +180,113 @@ const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
 
+
 let eggs = 0;
-
 let clickPower = 1;
+let farm = 0;
+let prestigeLevel = 0;
 
-let auto = 0;
+const MAX = 1000000000000000;
 
-const MAX_SCORE = 1000000000000;
 
-function updateUI(){
+function format(n){
 
-document.getElementById("egg").innerText =
-"🥚 " + Math.floor(eggs).toLocaleString();
-
-}
-
-window.clickEgg = function(){
-
-eggs += clickPower;
-
-if(eggs > MAX_SCORE){
-
-eggs = MAX_SCORE;
+return Math.floor(n).toLocaleString();
 
 }
 
-updateUI();
+function update(){
+
+document.getElementById("score").innerText =
+"🥚 "+format(eggs);
+
+document.getElementById("clickPower").innerText = clickPower;
+
+document.getElementById("farm").innerText = farm;
+
+document.getElementById("prestige").innerText = prestigeLevel;
+
+save();
 
 }
+
+function save(){
+
+localStorage.setItem("chickenSave",
+JSON.stringify({eggs,clickPower,farm,prestigeLevel}));
+
+}
+
+function load(){
+
+let s = localStorage.getItem("chickenSave");
+
+if(s){
+
+let d = JSON.parse(s);
+
+eggs=d.eggs||0;
+clickPower=d.clickPower||1;
+farm=d.farm||0;
+prestigeLevel=d.prestigeLevel||0;
+
+}
+
+}
+
+document.getElementById("chicken").onclick = ()=>{
+
+eggs += clickPower*(prestigeLevel+1);
+
+if(eggs>MAX) eggs=MAX;
+
+update();
+
+};
 
 window.buyClick = function(){
 
-let cost = clickPower * 50;
+let cost = clickPower*150;
 
-if(eggs >= cost){
+if(eggs>=cost){
 
-eggs -= cost;
+eggs-=cost;
 
 clickPower++;
 
-updateUI();
+update();
 
 }
 
 }
 
-window.buyAuto = function(){
+window.buyFarm = function(){
 
-let cost = (auto+1) * 100;
+let cost = (farm+1)*500;
 
-if(eggs >= cost){
+if(eggs>=cost){
 
-eggs -= cost;
+eggs-=cost;
 
-auto++;
+farm++;
 
-updateUI();
+update();
+
+}
+
+}
+
+window.prestige = function(){
+
+if(eggs>=500000){
+
+prestigeLevel++;
+
+eggs=0;
+clickPower=1;
+farm=0;
+
+update();
 
 }
 
@@ -187,17 +294,13 @@ updateUI();
 
 setInterval(()=>{
 
-if(auto>0){
+if(farm>0){
 
-eggs += auto;
+eggs += farm*(prestigeLevel+1);
 
-if(eggs > MAX_SCORE){
+if(eggs>MAX) eggs=MAX;
 
-eggs = MAX_SCORE;
-
-}
-
-updateUI();
+update();
 
 }
 
@@ -206,23 +309,23 @@ updateUI();
 
 window.saveScore = async function(){
 
-let name = document.getElementById("name").value;
+let name = document.getElementById("playerName").value;
 
 if(!name){
 
-alert("Digite um nome");
+alert("Digite seu nome");
 
 return;
 
 }
 
-let score = Number(Math.floor(eggs));
-
 await setDoc(doc(db,"ranking",name),{
 
 name:name,
 
-score:score
+score:Number(eggs),
+
+date:Date.now()
 
 });
 
@@ -232,9 +335,9 @@ loadRanking();
 
 async function loadRanking(){
 
-const list = document.getElementById("rank");
+let div = document.getElementById("ranking");
 
-list.innerHTML = "Atualizando...";
+div.innerHTML="Carregando...";
 
 const q = query(
 
@@ -248,34 +351,34 @@ limit(10)
 
 const snap = await getDocsFromServer(q);
 
-list.innerHTML = "";
+div.innerHTML="";
 
-let i = 1;
+let pos=1;
 
 snap.forEach(d=>{
 
-let p = d.data();
+let p=d.data();
 
-list.innerHTML +=
+div.innerHTML +=
 
-`<div class="rank-item">
-
-<span>${i}. ${p.name}</span>
-
-<span>🥚 ${Math.floor(p.score).toLocaleString()}</span>
-
+`<div class="rank">
+<span>${pos}. ${p.name}</span>
+<span>${format(p.score)}</span>
 </div>`;
 
-i++;
+pos++;
 
 });
 
 }
 
-updateUI();
+load();
+
+update();
 
 loadRanking();
 
 </script>
+
 </body>
 </html>
