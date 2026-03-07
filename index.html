@@ -1,235 +1,281 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocsFromServer, collection, query, orderBy, limit, increment, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chicken Clicker</title>
 
-const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
+<style>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const MY_ADMIN_ID = "CHICK-DJEU7";
-const MAX_SCORE = 1000000000000;
-
-let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
-localStorage.setItem('chickenID', playerID);
-document.getElementById('display-id').innerText = playerID;
-
-let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
-
-let pendingClicksForGlobal = 0;
-let lastSavedScore = -1;
-
-const saved = localStorage.getItem('chickenSave');
-if(saved) Object.assign(data, JSON.parse(saved));
-
-let playerName = localStorage.getItem('chickenName') || "Fazendeiro_" + playerID;
-document.getElementById('player-name').value = playerName;
-
-const globalRef = doc(db, "stats", "globalCounter");
-
-function saveLocal(){
-localStorage.setItem('chickenSave', JSON.stringify(data));
-updateUI();
+body{
+font-family:Arial;
+background:#fff8dc;
+text-align:center;
+margin:0;
 }
 
-async function syncWithServer(){
-
-if(data.totalClicks > MAX_SCORE){
-data.totalClicks = MAX_SCORE;
+#game{
+max-width:500px;
+margin:auto;
+padding:20px;
 }
 
-if (data.totalClicks !== lastSavedScore) {
-
-let scoreToSave = Number(Math.floor(data.totalClicks));
-
-await setDoc(doc(db, "Admin", playerID), {
-name: playerName,
-score: scoreToSave,
-id: playerID
-},{ merge: true });
-
-if (pendingClicksForGlobal > 0) {
-
-const toAdd = Math.floor(pendingClicksForGlobal);
-pendingClicksForGlobal = 0;
-
-await setDoc(globalRef,{
-total: increment(toAdd)
-},{ merge: true });
-
+h1{
+color:#8b4513;
 }
 
-lastSavedScore = data.totalClicks;
-
+#egg{
+font-size:40px;
+margin:10px;
 }
 
-await loadRanking();
+button{
+padding:15px;
+margin:10px;
+border:none;
+border-radius:10px;
+background:#ffcc00;
+font-weight:bold;
+cursor:pointer;
 }
 
-async function loadRanking(){
+button:hover{
+background:#ffdd33;
+}
 
-const list = document.getElementById('rank-list');
-list.innerHTML = `<li style="text-align:center;color:#999;">Atualizando...</li>`;
+#rank{
+margin-top:20px;
+text-align:left;
+}
 
-try{
+.rank-item{
+background:#fff;
+margin:5px;
+padding:8px;
+border-radius:6px;
+display:flex;
+justify-content:space-between;
+}
 
-const q = query(collection(db, "Admin"), orderBy("score","desc"), limit(10));
+</style>
+</head>
 
-const snap = await getDocsFromServer(q);
+<body>
 
-list.innerHTML = "";
+<div id="game">
 
-let i = 0;
+<h1>🐔 Chicken Clicker</h1>
 
-snap.forEach(d => {
+<div id="egg">🥚 0</div>
 
-i++;
+<button onclick="clickEgg()">CLICAR</button>
 
-const p = d.data();
+<br>
 
-let medal = i===1 ? "🥇 " : i===2 ? "🥈 " : i===3 ? "🥉 " : "";
+<button onclick="buyClick()">Upgrade Clique</button>
 
-list.innerHTML += `<li class="rank-item">
-<div>
-<b>${medal}${p.name}</b>
-<span class="rank-id">ID: #${p.id || '---'}</span>
+<button onclick="buyAuto()">Auto Farm</button>
+
+<br><br>
+
+<input id="name" placeholder="Seu nome">
+
+<button onclick="saveScore()">Salvar no Ranking</button>
+
+<h3>🏆 Ranking</h3>
+
+<div id="rank">Carregando...</div>
+
 </div>
-<b>🥚 ${Math.floor(p.score).toLocaleString()}</b>
-</li>`;
 
-});
+<script type="module">
 
-}catch(e){
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
-list.innerHTML = "Erro ao carregar ranking.";
+import { 
+getFirestore,
+doc,
+setDoc,
+collection,
+query,
+orderBy,
+limit,
+getDocsFromServer
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-}
 
-}
+const firebaseConfig = {
 
-window.clickChicken = (event)=>{
+apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
 
-const bonus = Math.pow(2,data.prestige) * data.colorBonus;
+authDomain: "chickentycoon.firebaseapp.com",
 
-const gain = data.clickPower * bonus;
+projectId: "chickentycoon",
 
-data.eggs += gain;
+storageBucket: "chickentycoon.firebasestorage.app",
 
-data.totalClicks += gain;
+messagingSenderId: "531618471959",
 
-if(data.totalClicks > MAX_SCORE){
-data.totalClicks = MAX_SCORE;
-}
-
-pendingClicksForGlobal += gain;
-
-saveLocal();
+appId: "1:531618471959:web:5484bbd6dcca21e102462e"
 
 };
 
-setInterval(()=>{
+const app = initializeApp(firebaseConfig);
 
-if(data.auto>0){
+const db = getFirestore(app);
 
-const b = Math.pow(2,data.prestige) * data.colorBonus;
+let eggs = 0;
 
-const g = data.auto * b;
+let clickPower = 1;
 
-data.eggs += g;
+let auto = 0;
 
-data.totalClicks += g;
+const MAX_SCORE = 1000000000000;
 
-if(data.totalClicks > MAX_SCORE){
-data.totalClicks = MAX_SCORE;
+function updateUI(){
+
+document.getElementById("egg").innerText =
+"🥚 " + Math.floor(eggs).toLocaleString();
+
 }
 
-pendingClicksForGlobal += g;
+window.clickEgg = function(){
 
-saveLocal();
+eggs += clickPower;
+
+if(eggs > MAX_SCORE){
+
+eggs = MAX_SCORE;
+
+}
+
+updateUI();
+
+}
+
+window.buyClick = function(){
+
+let cost = clickPower * 50;
+
+if(eggs >= cost){
+
+eggs -= cost;
+
+clickPower++;
+
+updateUI();
+
+}
+
+}
+
+window.buyAuto = function(){
+
+let cost = (auto+1) * 100;
+
+if(eggs >= cost){
+
+eggs -= cost;
+
+auto++;
+
+updateUI();
+
+}
+
+}
+
+setInterval(()=>{
+
+if(auto>0){
+
+eggs += auto;
+
+if(eggs > MAX_SCORE){
+
+eggs = MAX_SCORE;
+
+}
+
+updateUI();
 
 }
 
 },1000);
 
-window.buyClick = ()=>{
 
-if(data.eggs >= data.clickCost){
+window.saveScore = async function(){
 
-data.eggs -= data.clickCost;
+let name = document.getElementById("name").value;
 
-data.clickPower++;
+if(!name){
 
-data.clickCost = Math.floor(data.clickCost * 2.5);
+alert("Digite um nome");
 
-saveLocal();
-
-}
-
-};
-
-window.buyAuto = ()=>{
-
-if(data.eggs >= data.autoCost){
-
-data.eggs -= data.autoCost;
-
-data.auto++;
-
-data.autoCost = Math.floor(data.autoCost * 1.6);
-
-saveLocal();
+return;
 
 }
 
-};
+let score = Number(Math.floor(eggs));
 
-window.changeName = (n)=>{
+await setDoc(doc(db,"ranking",name),{
 
-const c = n.trim().substring(0,15);
+name:name,
 
-if(c !== "" && c !== playerName){
+score:score
 
-playerName = c;
-
-localStorage.setItem('chickenName', playerName);
-
-saveLocal();
-
-syncWithServer();
-
-}
-
-};
-
-window.adminBanAction = async ()=>{
-
-if(playerID !== MY_ADMIN_ID) return;
-
-const target = prompt("ID para banir:");
-
-if(target){
-
-await deleteDoc(doc(db,"Admin",target));
+});
 
 loadRanking();
 
 }
 
-};
+async function loadRanking(){
 
-function updateUI(){
+const list = document.getElementById("rank");
 
-document.getElementById('eggs').innerText = Math.floor(data.eggs).toLocaleString();
+list.innerHTML = "Atualizando...";
 
-document.getElementById('auto-cost').innerText = data.autoCost;
+const q = query(
 
-document.getElementById('click-cost').innerText = data.clickCost;
+collection(db,"ranking"),
+
+orderBy("score","desc"),
+
+limit(10)
+
+);
+
+const snap = await getDocsFromServer(q);
+
+list.innerHTML = "";
+
+let i = 1;
+
+snap.forEach(d=>{
+
+let p = d.data();
+
+list.innerHTML +=
+
+`<div class="rank-item">
+
+<span>${i}. ${p.name}</span>
+
+<span>🥚 ${Math.floor(p.score).toLocaleString()}</span>
+
+</div>`;
+
+i++;
+
+});
 
 }
-
-setInterval(syncWithServer,60000);
 
 updateUI();
+
 loadRanking();
 
-    </script>
+</script>
+</body>
+</html>
