@@ -21,6 +21,10 @@
         .icon-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #ddd; }
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
+        
+        /* BOTÃO DE ADMIN (BAN) */
+        #admin-btn { top: 170px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
+
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 180px; }
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
@@ -31,7 +35,7 @@
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
         .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
         
-        /* NOVA COR RAINBOW */
+        /* ANIMAÇÃO RAINBOW */
         .color-rainbow { animation: rainbow-anim 2s linear infinite; }
         @keyframes rainbow-anim {
             0% { filter: hue-rotate(0deg) drop-shadow(0 0 10px red); }
@@ -51,8 +55,6 @@
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
         .rank-id { font-size: 9px; color: #999; display: block; }
         h3 { margin: 5px 0; font-size: 14px; color: #f57f17; text-align: center; }
-        
-        /* ESTILO PARA A LINHA DA LOJA */
         .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; }
     </style>
@@ -74,6 +76,7 @@
 
 <div id="settings-btn" class="icon-btn" onclick="toggleMenu('settings-menu')">⚙️</div>
 <div id="shop-btn" class="icon-btn" onclick="toggleMenu('shop-menu')">🛒</div>
+<div id="admin-btn" class="icon-btn" onclick="adminBanAction()">🚫</div>
 
 <div id="settings-menu" class="float-menu">
     <h4 style="margin:0 0 10px 0; font-size:14px;">Configurações</h4>
@@ -106,7 +109,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, onSnapshot, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms",
@@ -119,6 +122,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // CONFIGURAÇÃO DE ADMIN
+    const MY_ADMIN_ID = "CHICK-DJEU7";
 
     let playerID = localStorage.getItem('chickenID');
     if (!playerID) {
@@ -182,6 +188,13 @@
     }
 
     async function syncWithServer() {
+        // SE FOR VOCÊ (ADMIN), O JOGO NÃO ENVIA DADOS PARA O SERVIDOR (NÃO TRAPAÇA)
+        if (playerID === MY_ADMIN_ID) {
+            console.log("Modo Admin: Invisível no Ranking e Global.");
+            loadRanking();
+            return;
+        }
+
         if (data.totalClicks > 0) {
             try {
                 await setDoc(doc(db, "Admin", playerID), { 
@@ -201,6 +214,21 @@
             } catch (e) { console.error("Erro na sincronização"); }
         }
     }
+
+    // FUNÇÃO DE BANIMENTO PARA O ADMIN
+    window.adminBanAction = async () => {
+        if (playerID !== MY_ADMIN_ID) return;
+        const target = prompt("Digite o ID do jogador para banir (Ex: CHICK-XXXXX):");
+        if (target) {
+            if (confirm("Deseja realmente deletar o jogador " + target + " do ranking?")) {
+                try {
+                    await deleteDoc(doc(db, "Admin", target));
+                    alert("Jogador removido com sucesso!");
+                    loadRanking();
+                } catch (e) { alert("Erro ao deletar: " + e); }
+            }
+        }
+    };
 
     window.clickChicken = (event) => {
         const bonus = Math.pow(2, data.prestige) * data.colorBonus;
@@ -261,7 +289,12 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
         
-        // LOGICA PARA MOSTRAR A COR RAINBOW (1 MILHAO)
+        // MOSTRA BOTÃO DE BAN SE FOR VOCÊ
+        if (playerID === MY_ADMIN_ID) {
+            document.getElementById('admin-btn').style.display = 'flex';
+        }
+
+        // LIBERA RAINBOW SE TIVER 1 MILHÃO
         if (data.totalClicks >= 1000000) {
             document.getElementById('rainbow-item').style.display = 'flex';
             if (!data.ownedColors.includes('rainbow')) {
@@ -302,4 +335,4 @@
     loadRanking();
 </script>
 </body>
- </html>
+    </html>
