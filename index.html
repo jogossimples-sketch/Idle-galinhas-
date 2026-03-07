@@ -8,6 +8,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const MY_ADMIN_ID = "CHICK-DJEU7";
+const MAX_SCORE = 1000000000000;
 
 let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
 localStorage.setItem('chickenID', playerID);
@@ -17,8 +18,6 @@ let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clic
 
 let pendingClicksForGlobal = 0;
 let lastSavedScore = -1;
-
-const MAX_SCORE = 1000000000000;
 
 const saved = localStorage.getItem('chickenSave');
 if(saved) Object.assign(data, JSON.parse(saved));
@@ -41,7 +40,7 @@ data.totalClicks = MAX_SCORE;
 
 if (data.totalClicks !== lastSavedScore) {
 
-const scoreToSave = Number(Math.floor(data.totalClicks));
+let scoreToSave = Number(Math.floor(data.totalClicks));
 
 await setDoc(doc(db, "Admin", playerID), {
 name: playerName,
@@ -70,7 +69,7 @@ await loadRanking();
 async function loadRanking(){
 
 const list = document.getElementById('rank-list');
-list.innerHTML = "Atualizando...";
+list.innerHTML = `<li style="text-align:center;color:#999;">Atualizando...</li>`;
 
 try{
 
@@ -90,15 +89,13 @@ const p = d.data();
 
 let medal = i===1 ? "🥇 " : i===2 ? "🥈 " : i===3 ? "🥉 " : "";
 
-list.innerHTML += `
-<li class="rank-item">
+list.innerHTML += `<li class="rank-item">
 <div>
 <b>${medal}${p.name}</b>
-<span class="rank-id">ID: #${p.id || "---"}</span>
+<span class="rank-id">ID: #${p.id || '---'}</span>
 </div>
 <b>🥚 ${Math.floor(p.score).toLocaleString()}</b>
-</li>
-`;
+</li>`;
 
 });
 
