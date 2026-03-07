@@ -169,7 +169,6 @@
             el.style.display = (m === id && isOpening) ? 'block' : 'none';
         });
 
-        // Atualização sincronizada ao abrir Perfil
         if (id === 'player-profile-menu' && isOpening) {
             updateUI();
             await syncWithServer(); 
@@ -191,7 +190,6 @@
     function saveLocal() { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); }
 
     async function syncWithServer() {
-        // Só salva se o score mudou (Economia de crédito)
         if (data.totalClicks !== lastSavedScore) {
             try {
                 await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.floor(data.totalClicks), id: playerID }, { merge: true });
@@ -207,11 +205,13 @@
     }
 
     async function loadRanking() {
+        const list = document.getElementById('rank-list');
         try {
             const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
             const snap = await getDocs(q);
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
+            
+            list.innerHTML = ""; // CORREÇÃO: Limpa a tabela antes de atualizar
+
             let i = 0;
             snap.forEach(d => {
                 i++;
@@ -229,12 +229,10 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
 
-        // Atualiza Perfil
         document.getElementById('p-time').innerText = formatTimePlayed(data.startTime);
         document.getElementById('p-prestige-panel').innerText = data.prestige;
         document.getElementById('p-total').innerText = Math.floor(data.totalClicks).toLocaleString();
         
-        // Rainbow Permanente (Ao chegar em 1M)
         if (playerID === MY_ADMIN_ID || data.totalClicks >= 1000000 || data.ownedColors.includes('rainbow')) {
             document.getElementById('rainbow-item').style.display = 'flex';
             if (!data.ownedColors.includes('rainbow') && data.totalClicks >= 1000000) {
