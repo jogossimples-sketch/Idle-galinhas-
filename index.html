@@ -201,16 +201,20 @@
                 lastSavedScore = data.totalClicks;
             } catch (e) { console.error("Erro na sincronização"); }
         }
-        loadRanking();
+        await loadRanking(); // Força a esperar carregar depois de salvar
     }
 
     async function loadRanking() {
         const list = document.getElementById('rank-list');
+        list.innerHTML = `<li style="text-align: center; color: #999;">Atualizando...</li>`; // Aviso visual que está carregando
+
         try {
+            // query com fetch das opções mais recentes do banco
             const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
-            const snap = await getDocs(q);
+            // getDocsFromServer bypassa o cache do firestore local
+            const snap = await getDocs(q, { source: 'server' }); 
             
-            list.innerHTML = ""; // CORREÇÃO: Limpa a tabela antes de atualizar
+            list.innerHTML = ""; // Esvazia de vez
 
             let i = 0;
             snap.forEach(d => {
@@ -219,7 +223,7 @@
                 let medal = i === 1 ? "🥇 " : i === 2 ? "🥈 " : i === 3 ? "🥉 " : "";
                 list.innerHTML += `<li class="rank-item"><div><b>${medal}${p.name}</b><span class="rank-id">ID: #${p.id || '---'}</span></div><b>🥚 ${Math.floor(p.score).toLocaleString()}</b></li>`;
             });
-        } catch (e) { console.error("Erro no Ranking"); }
+        } catch (e) { console.error("Erro no Ranking"); list.innerHTML = "Erro ao carregar ranking."; }
     }
 
     function updateUI() {
