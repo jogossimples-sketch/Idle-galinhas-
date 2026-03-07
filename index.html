@@ -18,26 +18,32 @@
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
         #profile-btn { top: 170px; right: 15px; border-color: #0288d1; color: #0288d1; }
+        #admin-btn { top: 230px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
         .bounce { transform: scale(0.8); }
-        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .color-white { filter: none; }
+        .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
+        .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
+        .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
+        .color-rainbow { animation: rainbow-anim 2s linear infinite; }
+        @keyframes rainbow-anim { 0% { filter: hue-rotate(0deg) drop-shadow(0 0 10px red); } 33% { filter: hue-rotate(120deg) drop-shadow(0 0 10px green); } 66% { filter: hue-rotate(240deg) drop-shadow(0 0 10px blue); } 100% { filter: hue-rotate(360deg) drop-shadow(0 0 10px red); } }
+        .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; }
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
-        .color-white { filter: none; }
-        .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
-        .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
-        .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
+        .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loadingScreen"><div class="spinner"></div><p style="color: white; margin-top: 15px;">CARREGANDO...</p></div>
+<div id="loadingScreen"><div class="spinner"></div><p style="color: white; margin-top: 15px;">CARREGANDO FAZENDA...</p></div>
 <div id="global-bar">CLIQUES MUNDIAIS: <span id="global-total">0</span></div>
 <div id="header">CHICKEN TYCOON</div>
 
@@ -49,24 +55,31 @@
 <div id="settings-btn" class="icon-btn">⚙️</div>
 <div id="shop-btn" class="icon-btn">🛒</div>
 <div id="profile-btn" class="icon-btn">📊</div>
+<div id="admin-btn" class="icon-btn">🚫</div>
 
 <div id="player-profile-menu" class="float-menu">
     <h4 style="text-align: center; color: #f57f17;">📊 SEU PERFIL</h4>
-    <div style="font-size: 13px;">🌟 Total Carreira: <br><b id="p-total">0</b></div>
+    <div style="font-size: 13px;">🌟 Total Carreira: <br><b id="p-total">0</b><br><br>🕒 Tempo: <span id="p-time">0m</span></div>
+</div>
+
+<div id="settings-menu" class="float-menu">
+    <h4 style="font-size:14px;">Configurações</h4>
+    <label style="font-size: 12px;"><input type="checkbox" id="toggle-effects" checked> Mostrar efeitos (+1)</label>
 </div>
 
 <div id="shop-menu" class="float-menu">
     <h4 style="font-size:14px; color:#f44336;">LOJA DE CORES</h4>
     <button class="buy-color-btn" data-col="white" data-price="0" data-bonus="1">Branca (1x)</button><br><br>
-    <button class="buy-color-btn" data-col="brown" data-price="50000" data-bonus="2">Marrom (50k - 2x)</button>
+    <button class="buy-color-btn" data-col="brown" data-price="500000" data-bonus="3">Marrom (500k - 3x)</button><br><br>
+    <button class="buy-color-btn" data-col="gold" data-price="50000000" data-bonus="10">Ouro (50M - 10x)</button>
 </div>
 
 <div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white"></div>
 
 <div id="menu">
-    <input type="text" id="player-name" placeholder="Seu Nome" maxlength="15" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center;">
+    <input type="text" id="player-name" placeholder="Seu Nome" maxlength="15" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold;">
     <div class="btn-grid">
-        <button class="btn" id="btn-prestige">✨ PRESTÍGIO</button>
+        <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">10M</span></button>
         <button class="btn" id="btn-click">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
         <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
@@ -76,27 +89,29 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+    // Nota: O Firebase precisa ser importado corretamente de uma das URLs de CDN
+    import { } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const MY_ADMIN_ID = "CHICK-DJEU7";
 
-    // FUNÇÃO PARA FORMATAR NÚMEROS (K, M, B, T, Qd)
     function fNum(n) {
-        if (n < 1e3) return Math.floor(n).toString();
-        if (n >= 1e3 && n < 1e6) return (n / 1e3).toFixed(1) + "k";
-        if (n >= 1e6 && n < 1e9) return (n / 1e6).toFixed(1) + "M";
-        if (n >= 1e9 && n < 1e12) return (n / 1e9).toFixed(1) + "B";
-        if (n >= 1e12 && n < 1e15) return (n / 1e12).toFixed(1) + "T";
-        if (n >= 1e15) return (n / 1e15).toFixed(1) + "Qd";
-        return n.toExponential(1);
+        if (n < 1e3) return Math.floor(n).toLocaleString();
+        if (n < 1e6) return (n / 1e3).toFixed(1) + "k";
+        if (n < 1e9) return (n / 1e6).toFixed(1) + "M";
+        if (n < 1e12) return (n / 1e9).toFixed(1) + "B";
+        if (n < 1e15) return (n / 1e12).toFixed(1) + "T";
+        return (n / 1e15).toFixed(1) + "Qd";
     }
 
     let playerID = localStorage.getItem('chickenID') || "CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase();
     localStorage.setItem('chickenID', playerID);
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'] };
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 100, clickCost: 250, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -108,92 +123,87 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
         
-        const targets = [250000, 500000, 1000000];
-        document.getElementById('btn-prestige').style.display = (data.prestige < 3 && data.totalClicks >= targets[data.prestige]) ? 'block' : 'none';
+        const targets = [10000000, 100000000, 1000000000];
+        if(data.prestige < 3) {
+            let t = targets[data.prestige];
+            document.getElementById('prestige-target').innerText = fNum(t);
+            document.getElementById('btn-prestige').style.display = data.totalClicks >= t ? 'block' : 'none';
+        }
+        if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
     const syncWithServer = async () => {
-        // TRAVA DE PRECISÃO PARA QUADRILHÕES
         const finalScore = Math.trunc(Number(data.totalClicks));
-        await setDoc(doc(db, "Admin", playerID), { 
-            name: localStorage.getItem('chickenName') || "Fazendeiro", 
-            score: finalScore, 
-            id: playerID 
-        }, { merge: true });
+        await setDoc(doc(db, "Admin", playerID), { name: localStorage.getItem('chickenName') || "Fazendeiro", score: finalScore, id: playerID }, { merge: true });
         loadRanking();
     };
 
     const loadRanking = async () => {
-        try {
-            // BUSCA DIRETO DO SERVIDOR PARA EVITAR CACHE TRAVADO
-            const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
-            const snap = await getDocs(q, { source: 'server' });
-            const list = document.getElementById('rank-list');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const p = d.data();
-                list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
-            });
-        } catch(e) { console.log("Erro ranking"); }
+        const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
+        const snap = await getDocs(q, { source: 'server' });
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const p = d.data();
+            list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
+        });
     };
 
-    document.getElementById('chicken').onclick = () => {
-        const gain = data.clickPower * Math.pow(2, data.prestige) * data.colorBonus;
+    document.getElementById('chicken').onclick = (e) => {
+        const gain = data.clickPower * Math.pow(1.5, data.prestige) * data.colorBonus;
         data.eggs += gain; data.totalClicks += gain;
+        if(document.getElementById('toggle-effects').checked) {
+            const txt = document.createElement('div'); txt.className = 'click-text'; txt.innerText = "+" + fNum(gain);
+            txt.style.left = e.clientX + "px"; txt.style.top = e.clientY + "px";
+            document.body.appendChild(txt); setTimeout(() => txt.remove(), 600);
+        }
         saveLocal();
-        document.getElementById('chicken').classList.add('bounce');
-        setTimeout(() => document.getElementById('chicken').classList.remove('bounce'), 100);
     };
 
     document.getElementById('btn-click').onclick = () => {
-        if(data.eggs >= data.clickCost) { 
-            data.eggs -= data.clickCost; 
-            data.clickPower++; 
-            data.clickCost = Math.floor(data.clickCost * 2.5); 
-            saveLocal(); 
-        }
+        if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 3.5); saveLocal(); }
     };
 
     document.getElementById('btn-auto').onclick = () => {
-        if(data.eggs >= data.autoCost) { 
-            data.eggs -= data.autoCost; 
-            data.auto++; 
-            data.autoCost = Math.floor(data.autoCost * 1.6); 
-            saveLocal(); 
+        if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 2.2); saveLocal(); }
+    };
+
+    document.getElementById('btn-prestige').onclick = () => {
+        const targets = [10000000, 100000000, 1000000000];
+        if(data.totalClicks >= targets[data.prestige]) {
+            data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100;
+            saveLocal(); syncWithServer();
         }
     };
 
-    const saveLocal = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
+    document.querySelectorAll('.buy-color-btn').forEach(btn => {
+        btn.onclick = () => {
+            const col = btn.dataset.col, price = parseInt(btn.dataset.price), bonus = parseInt(btn.dataset.bonus);
+            if(data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; }
+            else if(data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
+            saveLocal();
+        }
+    });
 
+    const saveLocal = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
+    
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         document.getElementById('player-name').value = localStorage.getItem('chickenName') || "";
         updateUI(); loadRanking();
-        setInterval(syncWithServer, 60000); 
+        setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(1.5, data.prestige) * data.colorBonus); saveLocal(); } }, 1000);
+        setInterval(syncWithServer, 60000);
     });
 
-    document.getElementById('player-name').onchange = (e) => {
-        localStorage.setItem('chickenName', e.target.value.substring(0, 15));
-        syncWithServer();
-    };
+    document.getElementById('shop-btn').onclick = () => toggleMenu('shop-menu');
+    document.getElementById('profile-btn').onclick = () => toggleMenu('player-profile-menu');
+    document.getElementById('settings-btn').onclick = () => toggleMenu('settings-menu');
+    document.getElementById('player-name').onchange = (e) => { localStorage.setItem('chickenName', e.target.value); syncWithServer(); };
 
-    // BOTÕES DE MENU
-    document.getElementById('shop-btn').onclick = () => { 
-        const m = document.getElementById('shop-menu');
+    function toggleMenu(id) {
+        const m = document.getElementById(id);
         m.style.display = m.style.display === 'block' ? 'none' : 'block';
-    };
-    document.getElementById('profile-btn').onclick = () => { 
-        const m = document.getElementById('player-profile-menu');
-        m.style.display = m.style.display === 'block' ? 'none' : 'block';
-    };
-    
-    // AUTO-CLICKER
-    setInterval(() => { 
-        if(data.auto > 0) { 
-            const g = data.auto * Math.pow(2, data.prestige) * data.colorBonus;
-            data.eggs += g; data.totalClicks += g; saveLocal(); 
-        } 
-    }, 1000);
+    }
 </script>
 </body>
     </html>
