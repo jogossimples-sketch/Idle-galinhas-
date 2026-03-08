@@ -82,8 +82,8 @@
     <div style="text-align: center; font-size: 9px; color: #999; margin-top: 4px;">ID: <span id="display-id">...</span></div>
     <div class="btn-grid">
         <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">1M</span></button>
-        <button class="btn" id="btn-click">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
-        <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
+        <button class="btn" id="btn-click">💪 SUPER DEDO (2x)<br>🥚 <span id="click-cost">100</span></button>
+        <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE (2x)<br>🥚 <span id="auto-cost">50</span></button>
     </div>
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list" style="list-style: none; padding: 0;"></ul>
@@ -103,7 +103,8 @@
         if (n < 1e3) return Math.floor(n).toLocaleString();
         if (n < 1e6) return (n / 1e3).toFixed(1) + "k";
         if (n < 1e9) return (n / 1e6).toFixed(1) + "M";
-        return (n / 1e9).toFixed(1) + "B";
+        if (n < 1e12) return (n / 1e9).toFixed(1) + "B";
+        return (n / 1e12).toFixed(1) + "T";
     }
 
     let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
@@ -139,11 +140,8 @@
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
-        
-        // Mostrar Rainbow apenas se tiver > 1M ovos
         document.getElementById('rainbow-row').style.display = data.eggs >= 1000000 || data.ownedColors.includes('rainbow') ? 'flex' : 'none';
 
-        // Atualizar textos dos botões da loja
         data.ownedColors.forEach(c => {
             const btn = document.getElementById('btn-color-' + c);
             if(btn) btn.innerText = "USAR";
@@ -171,7 +169,6 @@
             snap.forEach(d => rankArr.push(d.data()));
             localStorage.setItem('rankCache', JSON.stringify(rankArr));
             renderRankList(rankArr);
-
             const gSnap = await getDoc(doc(db, "stats", "globalCounter"));
             if(gSnap.exists()) {
                 const total = gSnap.data().total;
@@ -185,9 +182,7 @@
         let mult = (playerID === BONUS_ID) ? 200 : 1;
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
         data.eggs += gain; data.totalClicks += gain;
-        
         try { updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
-
         if (document.getElementById('toggle-effects').checked) {
             const el = document.createElement('div'); el.className = 'click-text'; el.innerText = "+" + fNum(gain);
             el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
@@ -197,16 +192,8 @@
     };
 
     window.buyColor = (col, price, bonus) => {
-        if (data.ownedColors.includes(col)) { 
-            data.color = col; 
-            data.colorBonus = bonus; 
-        }
-        else if (data.eggs >= price) { 
-            data.eggs -= price; 
-            data.ownedColors.push(col); 
-            data.color = col; 
-            data.colorBonus = bonus; 
-        }
+        if (data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; }
+        else if (data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
         saveLocal();
     };
 
@@ -236,14 +223,27 @@
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
-    
-    document.getElementById('player-name').onchange = (e) => { 
-        playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro";
-        localStorage.setItem('chickenName', playerName); 
-    };
+    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; localStorage.setItem('chickenName', playerName); };
 
-    document.getElementById('btn-click').onclick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 3.5); saveLocal(); } };
-    document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 2.2); saveLocal(); } };
+    // UPGRADES MULTIPLICATIVOS (2x)
+    document.getElementById('btn-click').onclick = () => { 
+        if(data.eggs >= data.clickCost) { 
+            data.eggs -= data.clickCost; 
+            data.clickPower *= 2; 
+            data.clickCost = Math.floor(data.clickCost * 4.5); // Aumentado um pouco para equilibrar o 2x
+            saveLocal(); 
+        } 
+    };
+    document.getElementById('btn-auto').onclick = () => { 
+        if(data.eggs >= data.autoCost) { 
+            data.eggs -= data.autoCost; 
+            if(data.auto === 0) data.auto = 1; // Garante que o multiplicador funcione na primeira compra
+            data.auto *= 2; 
+            data.autoCost = Math.floor(data.autoCost * 3.5); // Aumentado um pouco para equilibrar o 2x
+            saveLocal(); 
+        } 
+    };
+    
     document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100; saveLocal(); syncWithServer(); } };
 
     window.adminBanAction = async () => {
@@ -253,4 +253,4 @@
     };
 </script>
 </body>
-    </html>
+  </html>
