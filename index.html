@@ -93,14 +93,13 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const MY_ADMIN_ID = "CHICK-DJEU7";
 
-    // FUNÇÃO DE FORMATAÇÃO PARA QUADRILHÕES
     function fNum(n) {
         if (n < 1e3) return Math.floor(n).toLocaleString();
         if (n < 1e6) return (n / 1e3).toFixed(1) + "k";
@@ -134,9 +133,35 @@
         if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
+    // CORREÇÃO: SINCRONIZAÇÃO QUE BAIXA DADOS DO SERVIDOR SE FOREM MAIORES
     const syncWithServer = async () => {
+        const docRef = doc(db, "Admin", playerID);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const serverScore = docSnap.data().score || 0;
+            // Se o servidor tiver mais pontos, atualiza o local para evitar reset
+            if (serverScore > data.totalClicks) {
+                data.totalClicks = serverScore;
+                if (data.eggs < serverScore) data.eggs = serverScore;
+                saveLocal();
+            }
+        }
+
         const score = Math.trunc(Number(data.totalClicks));
-        await setDoc(doc(db, "Admin", playerID), { name: localStorage.getItem('chickenName') || "Fazendeiro", score: score, id: playerID }, { merge: true });
+        await setDoc(docRef, { 
+            name: localStorage.getItem('chickenName') || "Fazendeiro", 
+            score: score, 
+            id: playerID 
+        }, { merge: true });
+        
+        // Atualiza Global (Opcional, se existir documento stats/globalCounter)
+        try {
+            const globalRef = doc(db, "stats", "globalCounter");
+            const gSnap = await getDoc(globalRef);
+            if(gSnap.exists()) document.getElementById('global-total').innerText = fNum(gSnap.data().total);
+        } catch(e){}
+
         loadRanking();
     };
 
@@ -188,14 +213,15 @@
 
     const saveLocal = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
         document.getElementById("loadingScreen").style.display = "none";
-        updateUI(); loadRanking();
+        // Primeiro tenta baixar o progresso do servidor antes de começar o jogo
+        await syncWithServer();
+        updateUI();
         setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus); saveLocal(); } }, 1000);
         setInterval(syncWithServer, 60000);
     });
 
-    // CONTROLES DOS MENUS
     const toggle = (id) => { const el = document.getElementById(id); el.style.display = el.style.display === 'block' ? 'none' : 'block'; };
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
