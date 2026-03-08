@@ -91,7 +91,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
@@ -111,7 +111,7 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 100, clickCost: 250, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0 };
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0 };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -121,17 +121,29 @@
     function renderRankList(rankData) {
         const list = document.getElementById('rank-list');
         list.innerHTML = "";
-        rankData.forEach(p => {
-            list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
+        rankData.forEach((p, index) => {
+            const crown = index === 0 ? "👑 " : "";
+            list.innerHTML += `<li class="rank-item"><b>${crown}${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
         });
     }
 
-    function showCachedRank() {
-        const cached = localStorage.getItem('rankCache');
-        const cachedGlobal = localStorage.getItem('globalCache');
-        if(cached) renderRankList(JSON.parse(cached));
-        if(cachedGlobal) document.getElementById('global-total').innerText = fNum(Number(cachedGlobal));
-    }
+    // LISTENER EM TEMPO REAL PARA RANKING E GLOBAL
+    const initRealtime = () => {
+        onSnapshot(query(collection(db, "Admin"), orderBy("score", "desc"), limit(10)), (snap) => {
+            let rankArr = [];
+            snap.forEach(d => rankArr.push(d.data()));
+            localStorage.setItem('rankCache', JSON.stringify(rankArr));
+            renderRankList(rankArr);
+        });
+
+        onSnapshot(doc(db, "stats", "globalCounter"), (doc) => {
+            if(doc.exists()) {
+                const total = doc.data().total;
+                document.getElementById('global-total').innerText = fNum(total);
+                localStorage.setItem('globalCache', total);
+            }
+        });
+    };
 
     const updateUI = () => {
         document.getElementById('eggs').innerText = fNum(data.eggs);
@@ -160,29 +172,15 @@
         if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
-    const syncWithServer = async () => {
+    const syncPlayerData = async () => {
         await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.trunc(Number(data.totalClicks)), id: playerID }, { merge: true });
-        try {
-            const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
-            const snap = await getDocs(q);
-            let rankArr = [];
-            snap.forEach(d => rankArr.push(d.data()));
-            localStorage.setItem('rankCache', JSON.stringify(rankArr));
-            renderRankList(rankArr);
-            const gSnap = await getDoc(doc(db, "stats", "globalCounter"));
-            if(gSnap.exists()) {
-                const total = gSnap.data().total;
-                localStorage.setItem('globalCache', total);
-                document.getElementById('global-total').innerText = fNum(total);
-            }
-        } catch(e){}
     };
 
     document.getElementById('chicken').onclick = async (e) => {
         let mult = (playerID === BONUS_ID) ? 200 : 1;
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
         data.eggs += gain; data.totalClicks += gain;
-        try { updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
+        updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }).catch(()=>{});
         if (document.getElementById('toggle-effects').checked) {
             const el = document.createElement('div'); el.className = 'click-text'; el.innerText = "+" + fNum(gain);
             el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
@@ -207,8 +205,8 @@
 
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
+        initRealtime();
         updateUI(); 
-        showCachedRank(); 
         setInterval(() => { 
             if(data.auto > 0) { 
                 let mult = (playerID === BONUS_ID) ? 200 : 1;
@@ -216,35 +214,35 @@
                 saveLocal(); 
             } 
         }, 1000);
-        setInterval(syncWithServer, 60000);
+        setInterval(syncPlayerData, 60000);
     });
 
     const toggle = (id) => { const el = document.getElementById(id); el.style.display = el.style.display === 'block' ? 'none' : 'block'; };
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
-    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; localStorage.setItem('chickenName', playerName); };
+    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; localStorage.setItem('chickenName', playerName); syncPlayerData(); };
 
-    // UPGRADES MULTIPLICATIVOS (2x)
+    // UPGRADES COM PREÇOS BAIXOS E 2x
     document.getElementById('btn-click').onclick = () => { 
         if(data.eggs >= data.clickCost) { 
             data.eggs -= data.clickCost; 
             data.clickPower *= 2; 
-            data.clickCost = Math.floor(data.clickCost * 4.5); // Aumentado um pouco para equilibrar o 2x
+            data.clickCost = Math.floor(data.clickCost * 2.8); 
             saveLocal(); 
         } 
     };
     document.getElementById('btn-auto').onclick = () => { 
         if(data.eggs >= data.autoCost) { 
             data.eggs -= data.autoCost; 
-            if(data.auto === 0) data.auto = 1; // Garante que o multiplicador funcione na primeira compra
+            if(data.auto === 0) data.auto = 1;
             data.auto *= 2; 
-            data.autoCost = Math.floor(data.autoCost * 3.5); // Aumentado um pouco para equilibrar o 2x
+            data.autoCost = Math.floor(data.autoCost * 1.8); 
             saveLocal(); 
         } 
     };
     
-    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100; saveLocal(); syncWithServer(); } };
+    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 100; data.autoCost = 50; saveLocal(); syncPlayerData(); } };
 
     window.adminBanAction = async () => {
         if (playerID !== MY_ADMIN_ID) return;
@@ -253,4 +251,4 @@
     };
 </script>
 </body>
-  </html>
+                                                                                                      </html>
