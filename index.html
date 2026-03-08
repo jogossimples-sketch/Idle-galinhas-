@@ -22,7 +22,6 @@
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
-        .bounce { transform: scale(0.8); }
         .color-white { filter: none; }
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
@@ -84,7 +83,7 @@
     <div class="btn-grid">
         <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">1M</span></button>
         <button class="btn" id="btn-click">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
-        <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
+        <button class="btn" id="btn-auto">👨‍#AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list" style="list-style: none; padding: 0;"></ul>
@@ -98,7 +97,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const MY_ADMIN_ID = "CHICK-DJEU7";
-    const BONUS_ID = "CHICK-SF36B"; // ID COM 200X
+    const BONUS_ID = "CHICK-SF36B"; 
 
     function fNum(n) {
         if (n < 1e3) return Math.floor(n).toLocaleString();
@@ -120,10 +119,8 @@
     let playerName = localStorage.getItem('chickenName') || "Fazendeiro";
     document.getElementById('player-name').value = playerName;
 
-    // CALCULO DE TEMPO TOTAL
     function updateTimePlayed() {
-        let sessionTime = Date.now() - data.startTime;
-        let totalMs = (data.totalTimeMs || 0) + sessionTime;
+        let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
         let mins = Math.floor(totalMs / 60000);
         let hours = Math.floor(mins / 60);
         document.getElementById('p-time').innerText = hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
@@ -150,17 +147,15 @@
         const score = Math.trunc(Number(data.totalClicks));
         await setDoc(doc(db, "Admin", playerID), { name: playerName, score: score, id: playerID }, { merge: true });
         
-        // CONTADOR MUNDIAL - CORREÇÃO DE TRAVAMENTO
         try {
             const globalRef = doc(db, "stats", "globalCounter");
             const gSnap = await getDoc(globalRef);
             if(gSnap.exists()) {
                 document.getElementById('global-total').innerText = fNum(gSnap.data().total);
-            } else {
-                await setDoc(globalRef, { total: 0 }); // Cria se não existir
             }
-        } catch(e){ console.log("Erro Global"); }
+        } catch(e){}
         
+        // Carrega o ranking SOMENTE dentro deste intervalo de 1 min
         loadRanking();
     };
 
@@ -176,14 +171,12 @@
     };
 
     document.getElementById('chicken').onclick = async (e) => {
-        // MULTIPLICADOR 200X SE FOR O ID ESPECÍFICO
-        let specialBonus = (playerID === BONUS_ID) ? 200 : 1;
-        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * specialBonus;
+        let mult = (playerID === "CHICK-SF36B") ? 200 : 1;
+        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
         
         data.eggs += gain; data.totalClicks += gain;
         
-        // Adiciona ao Global em tempo real
-        try { await updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
+        try { updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
 
         if (document.getElementById('toggle-effects').checked) {
             const el = document.createElement('div'); el.className = 'click-text'; el.innerText = "+" + fNum(gain);
@@ -216,10 +209,9 @@
     };
 
     const saveLocal = () => { 
-        // Salva o tempo decorrido antes de salvar
         let sessionTime = Date.now() - data.startTime;
         data.totalTimeMs = (data.totalTimeMs || 0) + sessionTime;
-        data.startTime = Date.now(); // Reseta o início da sessão para o próximo calculo
+        data.startTime = Date.now();
         localStorage.setItem('chickenSave', JSON.stringify(data)); 
         updateUI(); 
     };
@@ -227,14 +219,16 @@
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         updateUI(); 
-        syncWithServer();
+        // Não carrega o ranking aqui (removido para atender seu pedido)
         setInterval(() => { 
             if(data.auto > 0) { 
-                let specialBonus = (playerID === BONUS_ID) ? 200 : 1;
-                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * specialBonus); 
+                let mult = (playerID === "CHICK-SF36B") ? 200 : 1;
+                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * mult); 
                 saveLocal(); 
             } 
         }, 1000);
+        
+        // Atualiza servidor e ranking a cada 60 segundos
         setInterval(syncWithServer, 60000);
     });
 
@@ -252,7 +246,7 @@
     window.adminBanAction = async () => {
         if (playerID !== MY_ADMIN_ID) return;
         const target = prompt("ID para banir:");
-        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); loadRanking(); }
+        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); }
     };
 </script>
 </body>
