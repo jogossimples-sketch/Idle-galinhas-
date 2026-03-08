@@ -96,7 +96,6 @@
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const MY_ADMIN_ID = "CHICK-DJEU7";
     const BONUS_ID = "CHICK-SF36B"; 
 
     function fNum(n) {
@@ -119,11 +118,19 @@
     let playerName = localStorage.getItem('chickenName') || "Fazendeiro";
     document.getElementById('player-name').value = playerName;
 
-    function updateTimePlayed() {
-        let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
-        let mins = Math.floor(totalMs / 60000);
-        let hours = Math.floor(mins / 60);
-        document.getElementById('p-time').innerText = hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
+    function renderRankList(rankData) {
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        rankData.forEach(p => {
+            list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
+        });
+    }
+
+    function showCachedRank() {
+        const cached = localStorage.getItem('rankCache');
+        const cachedGlobal = localStorage.getItem('globalCache');
+        if(cached) renderRankList(JSON.parse(cached));
+        if(cachedGlobal) document.getElementById('global-total').innerText = fNum(Number(cachedGlobal));
     }
 
     const updateUI = () => {
@@ -133,46 +140,44 @@
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
-        updateTimePlayed();
+        
+        let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
+        let mins = Math.floor(totalMs / 60000);
+        let hours = Math.floor(mins / 60);
+        document.getElementById('p-time').innerText = hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
         
         const targets = [1000000, 100000000, 1000000000];
         if (data.prestige < 3) {
             document.getElementById('prestige-target').innerText = fNum(targets[data.prestige]);
             document.getElementById('btn-prestige').style.display = data.totalClicks >= targets[data.prestige] ? 'block' : 'none';
         }
-        if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
     const syncWithServer = async () => {
-        const score = Math.trunc(Number(data.totalClicks));
-        await setDoc(doc(db, "Admin", playerID), { name: playerName, score: score, id: playerID }, { merge: true });
+        // Envia seus dados (não gasta leitura, apenas escrita)
+        await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.trunc(Number(data.totalClicks)), id: playerID }, { merge: true });
         
+        // BAIXA O RANKING (SÓ AQUI CONSOME CRÉDITOS)
         try {
-            const globalRef = doc(db, "stats", "globalCounter");
-            const gSnap = await getDoc(globalRef);
+            const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
+            const snap = await getDocs(q);
+            let rankArr = [];
+            snap.forEach(d => rankArr.push(d.data()));
+            localStorage.setItem('rankCache', JSON.stringify(rankArr));
+            renderRankList(rankArr);
+
+            const gSnap = await getDoc(doc(db, "stats", "globalCounter"));
             if(gSnap.exists()) {
-                document.getElementById('global-total').innerText = fNum(gSnap.data().total);
+                const total = gSnap.data().total;
+                localStorage.setItem('globalCache', total);
+                document.getElementById('global-total').innerText = fNum(total);
             }
         } catch(e){}
-        
-        loadRanking();
-    };
-
-    const loadRanking = async () => {
-        const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
-        const snap = await getDocs(q, { source: 'server' });
-        const list = document.getElementById('rank-list');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const p = d.data();
-            list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
-        });
     };
 
     document.getElementById('chicken').onclick = async (e) => {
         let mult = (playerID === BONUS_ID) ? 200 : 1;
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
-        
         data.eggs += gain; data.totalClicks += gain;
         
         try { updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
@@ -191,22 +196,6 @@
         saveLocal();
     };
 
-    document.getElementById('btn-click').onclick = () => {
-        if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 3.5); saveLocal(); }
-    };
-
-    document.getElementById('btn-auto').onclick = () => {
-        if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 2.2); saveLocal(); }
-    };
-
-    document.getElementById('btn-prestige').onclick = () => {
-        const targets = [1000000, 100000000, 1000000000];
-        if (data.totalClicks >= targets[data.prestige]) {
-            data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100;
-            saveLocal(); syncWithServer();
-        }
-    };
-
     const saveLocal = () => { 
         let sessionTime = Date.now() - data.startTime;
         data.totalTimeMs = (data.totalTimeMs || 0) + sessionTime;
@@ -218,9 +207,8 @@
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         updateUI(); 
-        // CARREGA O RANKING E GLOBAL ASSIM QUE ENTRA (SÓ UMA VEZ)
-        syncWithServer();
-
+        showCachedRank(); // MOSTRA O RANKING SALVO SEM GASTAR CRÉDITOS
+        
         setInterval(() => { 
             if(data.auto > 0) { 
                 let mult = (playerID === BONUS_ID) ? 200 : 1;
@@ -229,7 +217,7 @@
             } 
         }, 1000);
         
-        // Atualiza servidor e ranking a cada 60 segundos depois de já ter carregado
+        // SÓ FAZ A PRIMEIRA CONEXÃO APÓS 60 SEGUNDOS (Economia máxima)
         setInterval(syncWithServer, 60000);
     });
 
@@ -241,14 +229,12 @@
     document.getElementById('player-name').onchange = (e) => { 
         playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro";
         localStorage.setItem('chickenName', playerName); 
-        syncWithServer(); 
     };
 
-    window.adminBanAction = async () => {
-        if (playerID !== MY_ADMIN_ID) return;
-        const target = prompt("ID para banir:");
-        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); loadRanking(); }
-    };
+    document.getElementById('btn-click').onclick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower++; data.clickCost = Math.floor(data.clickCost * 3.5); saveLocal(); } };
+    document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 2.2); saveLocal(); } };
+    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100; saveLocal(); syncWithServer(); } };
+
 </script>
 </body>
-    </html>
+        </html>
