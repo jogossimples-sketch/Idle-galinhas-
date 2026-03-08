@@ -251,8 +251,14 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // FUNÇÃO DE FORMATAÇÃO MELHORADA (k, m, b, t, qd)
     function fNum(n) { 
-        return n < 1e6 ? Math.floor(n).toLocaleString() : (n/1e6).toFixed(1) + "M"; 
+        if (n < 1e3) return Math.floor(n);
+        if (n < 1e6) return (n/1e3).toFixed(1) + "k";
+        if (n < 1e9) return (n/1e6).toFixed(1) + "m";
+        if (n < 1e12) return (n/1e9).toFixed(1) + "b";
+        if (n < 1e15) return (n/1e12).toFixed(1) + "t";
+        return (n/1e15).toFixed(1) + "qd";
     }
 
     let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
@@ -260,6 +266,7 @@
     document.getElementById('display-id').innerText = playerID;
 
     let data = { 
+        name: "Fazendeiro",
         eggs: 0, totalClicks: 0, clickPower: 1, auto: 0, clickCost: 100, autoCost: 50, prestige: 0,
         color: 'white', colorBonus: 1, ownedColors: ['white'],
         bg: 'default', bgBonus: 1, ownedBgs: ['default'],
@@ -268,6 +275,9 @@
     
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
+
+    // Carrega o nome salvo no campo de texto
+    document.getElementById('player-name').value = data.name;
 
     const shopColors = [
         {id:'brown', name:'Marrom', price:50000, bonus:2},
@@ -373,25 +383,26 @@
         updateUI(); 
     };
 
-    // Função de sincronização melhorada: lê do Firebase ANTES de salvar o local
     const sync = async () => {
+        const newName = document.getElementById('player-name').value || "Fazendeiro";
+        data.name = newName; // Salva o nome no objeto local
+        save();
+
         const userRef = doc(db, "Admin", playerID);
         const snap = await getDoc(userRef);
 
         if (snap.exists()) {
             const firebaseData = snap.data();
-            // Se o score no Firebase for MAIOR que o local, atualizamos o local para não perder os ovos dados pelo admin
             if (firebaseData.score > data.totalClicks) {
                 const diff = firebaseData.score - data.totalClicks;
-                data.eggs += diff; // Adiciona os ovos novos ao saldo atual
-                data.totalClicks = firebaseData.score; // Ajusta o total
+                data.eggs += diff;
+                data.totalClicks = firebaseData.score;
                 save();
             }
         }
 
-        // Agora sim, salva o estado atualizado no Firebase
         setDoc(userRef, { 
-            name: document.getElementById('player-name').value || "Fazendeiro", 
+            name: data.name, 
             score: data.totalClicks, 
             id: playerID 
         }, { merge: true });
@@ -426,7 +437,6 @@
         save(); 
     }, 1000);
 
-    // Diminuído para 30 segundos para ser mais rápido
     setInterval(sync, 30000);
 
     const toggle = (id) => { 
@@ -444,7 +454,7 @@
     window.onload = () => { 
         document.getElementById('loadingScreen').style.display='none'; 
         updateUI(); 
-        sync(); // Sincroniza logo ao abrir para checar se o admin deu ovos
+        sync(); 
     };
 </script>
 </body>
