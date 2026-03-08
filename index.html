@@ -83,7 +83,7 @@
     <div class="btn-grid">
         <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">1M</span></button>
         <button class="btn" id="btn-click">💪 SUPER DEDO<br>🥚 <span id="click-cost">100</span></button>
-        <button class="btn" id="btn-auto">👨‍#AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
+        <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
     <h3>🏆 RANKING GLOBAL</h3>
     <ul id="rank-list" style="list-style: none; padding: 0;"></ul>
@@ -155,7 +155,6 @@
             }
         } catch(e){}
         
-        // Carrega o ranking SOMENTE dentro deste intervalo de 1 min
         loadRanking();
     };
 
@@ -171,7 +170,7 @@
     };
 
     document.getElementById('chicken').onclick = async (e) => {
-        let mult = (playerID === "CHICK-SF36B") ? 200 : 1;
+        let mult = (playerID === BONUS_ID) ? 200 : 1;
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
         
         data.eggs += gain; data.totalClicks += gain;
@@ -219,16 +218,18 @@
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         updateUI(); 
-        // Não carrega o ranking aqui (removido para atender seu pedido)
+        // CARREGA O RANKING E GLOBAL ASSIM QUE ENTRA (SÓ UMA VEZ)
+        syncWithServer();
+
         setInterval(() => { 
             if(data.auto > 0) { 
-                let mult = (playerID === "CHICK-SF36B") ? 200 : 1;
+                let mult = (playerID === BONUS_ID) ? 200 : 1;
                 data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * mult); 
                 saveLocal(); 
             } 
         }, 1000);
         
-        // Atualiza servidor e ranking a cada 60 segundos
+        // Atualiza servidor e ranking a cada 60 segundos depois de já ter carregado
         setInterval(syncWithServer, 60000);
     });
 
@@ -246,7 +247,7 @@
     window.adminBanAction = async () => {
         if (playerID !== MY_ADMIN_ID) return;
         const target = prompt("ID para banir:");
-        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); }
+        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); loadRanking(); }
     };
 </script>
 </body>
