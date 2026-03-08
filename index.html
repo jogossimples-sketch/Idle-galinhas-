@@ -59,7 +59,7 @@
 
 <div id="player-profile-menu" class="float-menu">
     <h4 style="color: #f57f17; text-align: center;">📊 SEU PERFIL</h4>
-    <div style="font-size: 13px;">🌟 Total Carreira: <br><b id="p-total">0</b><br><br>🕒 Tempo: <span id="p-time">0m</span></div>
+    <div style="font-size: 13px;">🌟 Total Carreira: <br><b id="p-total">0</b><br><br>🕒 Tempo Total: <span id="p-time">0m</span></div>
 </div>
 
 <div id="settings-menu" class="float-menu">
@@ -92,12 +92,13 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const MY_ADMIN_ID = "CHICK-DJEU7";
+    const BONUS_ID = "CHICK-SF36B"; // ID COM 200X
 
     function fNum(n) {
         if (n < 1e3) return Math.floor(n).toLocaleString();
@@ -112,13 +113,21 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 100, clickCost: 250, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now() };
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 100, clickCost: 250, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0 };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
-    // Carregar nome salvo corretamente
     let playerName = localStorage.getItem('chickenName') || "Fazendeiro";
     document.getElementById('player-name').value = playerName;
+
+    // CALCULO DE TEMPO TOTAL
+    function updateTimePlayed() {
+        let sessionTime = Date.now() - data.startTime;
+        let totalMs = (data.totalTimeMs || 0) + sessionTime;
+        let mins = Math.floor(totalMs / 60000);
+        let hours = Math.floor(mins / 60);
+        document.getElementById('p-time').innerText = hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
+    }
 
     const updateUI = () => {
         document.getElementById('eggs').innerText = fNum(data.eggs);
@@ -127,6 +136,7 @@
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
+        updateTimePlayed();
         
         const targets = [1000000, 100000000, 1000000000];
         if (data.prestige < 3) {
@@ -140,12 +150,16 @@
         const score = Math.trunc(Number(data.totalClicks));
         await setDoc(doc(db, "Admin", playerID), { name: playerName, score: score, id: playerID }, { merge: true });
         
-        // Atualizar Contador Mundial sem travar
-        const globalRef = doc(db, "stats", "globalCounter");
-        const gSnap = await getDoc(globalRef);
-        if(gSnap.exists()) {
-            document.getElementById('global-total').innerText = fNum(gSnap.data().total);
-        }
+        // CONTADOR MUNDIAL - CORREÇÃO DE TRAVAMENTO
+        try {
+            const globalRef = doc(db, "stats", "globalCounter");
+            const gSnap = await getDoc(globalRef);
+            if(gSnap.exists()) {
+                document.getElementById('global-total').innerText = fNum(gSnap.data().total);
+            } else {
+                await setDoc(globalRef, { total: 0 }); // Cria se não existir
+            }
+        } catch(e){ console.log("Erro Global"); }
         
         loadRanking();
     };
@@ -155,17 +169,22 @@
         const snap = await getDocs(q, { source: 'server' });
         const list = document.getElementById('rank-list');
         list.innerHTML = "";
-        let i = 0;
         snap.forEach(d => {
-            i++;
             const p = d.data();
-            list.innerHTML += `<li class="rank-item"><b>#${i} ${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
+            list.innerHTML += `<li class="rank-item"><b>${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
         });
     };
 
-    document.getElementById('chicken').onclick = (e) => {
-        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus;
+    document.getElementById('chicken').onclick = async (e) => {
+        // MULTIPLICADOR 200X SE FOR O ID ESPECÍFICO
+        let specialBonus = (playerID === BONUS_ID) ? 200 : 1;
+        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * specialBonus;
+        
         data.eggs += gain; data.totalClicks += gain;
+        
+        // Adiciona ao Global em tempo real
+        try { await updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }); } catch(err){}
+
         if (document.getElementById('toggle-effects').checked) {
             const el = document.createElement('div'); el.className = 'click-text'; el.innerText = "+" + fNum(gain);
             el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
@@ -196,13 +215,26 @@
         }
     };
 
-    const saveLocal = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
+    const saveLocal = () => { 
+        // Salva o tempo decorrido antes de salvar
+        let sessionTime = Date.now() - data.startTime;
+        data.totalTimeMs = (data.totalTimeMs || 0) + sessionTime;
+        data.startTime = Date.now(); // Reseta o início da sessão para o próximo calculo
+        localStorage.setItem('chickenSave', JSON.stringify(data)); 
+        updateUI(); 
+    };
 
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         updateUI(); 
-        syncWithServer(); // Sincroniza logo ao abrir para carregar nome e global
-        setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus); saveLocal(); } }, 1000);
+        syncWithServer();
+        setInterval(() => { 
+            if(data.auto > 0) { 
+                let specialBonus = (playerID === BONUS_ID) ? 200 : 1;
+                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * specialBonus); 
+                saveLocal(); 
+            } 
+        }, 1000);
         setInterval(syncWithServer, 60000);
     });
 
@@ -211,7 +243,6 @@
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
     
-    // CORREÇÃO DEFINITIVA DO NOME
     document.getElementById('player-name').onchange = (e) => { 
         playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro";
         localStorage.setItem('chickenName', playerName); 
@@ -225,4 +256,4 @@
     };
 </script>
 </body>
-        </html>
+    </html>
