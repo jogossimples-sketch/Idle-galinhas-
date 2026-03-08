@@ -5,27 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chicken Tycoon Online</title>
     <style>
-        body { margin: 0; background: #fffde7; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; position: relative; transition: background 0.5s; }
-        #loadingScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121212; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
-        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #f1c40f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        body { 
+            margin: 0; 
+            background: #fffde7; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            position: relative; 
+            transition: background 0.5s; 
+        }
+        #loadingScreen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: #121212; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 10000; 
+        }
+        .spinner { 
+            border: 4px solid rgba(255,255,255,0.1); 
+            border-left-color: #f1c40f; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            animation: spin 1s linear infinite; 
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #global-bar { background: #5d4037; color: #ffca28; width: 100%; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; }
-        #header { background: #fbc02d; width: 100%; text-align: center; padding: 12px; font-weight: bold; font-size: 20px; color: #5d4037; }
-        #stats-container { text-align: center; margin: 10px; z-index: 10; }
-        #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
+        #global-bar { 
+            background: #5d4037; 
+            color: #ffca28; 
+            width: 100%; 
+            text-align: center; 
+            padding: 5px; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        #header { 
+            background: #fbc02d; 
+            width: 100%; 
+            text-align: center; 
+            padding: 12px; 
+            font-weight: bold; 
+            font-size: 20px; 
+            color: #5d4037; 
+        }
+        #stats-container { 
+            text-align: center; 
+            margin: 10px; 
+            z-index: 10; 
+        }
+        #stats { 
+            font-size: 35px; 
+            font-weight: bold; 
+            color: #5d4037; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+        
+        .icon-btn { 
+            position: absolute; 
+            width: 45px; 
+            height: 45px; 
+            cursor: pointer; 
+            z-index: 100; 
+            background: white; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 4px 0 #ddd; 
+            font-size: 24px; 
+            border: 2px solid #ccc; 
+        }
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
         #inventory-btn { top: 170px; right: 15px; border-color: #4caf50; color: #4caf50; }
         #profile-btn { top: 230px; right: 15px; border-color: #0288d1; color: #0288d1; }
         #bg-shop-btn { top: 50px; left: 15px; border-color: #ff9800; color: #ff9800; }
 
-        .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 220px; max-height: 400px; overflow-y: auto; }
+        .float-menu { 
+            display: none; 
+            position: absolute; 
+            top: 100px; 
+            right: 70px; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            z-index: 101; 
+            border: 2px solid #fbc02d; 
+            min-width: 220px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+        }
         .left-menu { right: auto; left: 70px; border-color: #ff9800; }
 
-        #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
-        #chicken { width: 120px; cursor: pointer; transition: transform 0.1s; z-index: 2; }
+        #chicken-container { 
+            height: 160px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+            width: 100%; 
+        }
+        #chicken { 
+            width: 120px; 
+            cursor: pointer; 
+            transition: transform 0.1s; 
+            z-index: 2; 
+        }
+        
         .color-white { filter: none; }
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
@@ -33,13 +133,53 @@
         .color-rainbow { animation: rainbow-anim 2s linear infinite; }
         @keyframes rainbow-anim { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
-        #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; text-align: center; font-size: 13px; }
+        #menu { 
+            background: white; 
+            width: 100%; 
+            flex-grow: 1; 
+            border-radius: 30px 30px 0 0; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            overflow-y: auto; 
+        }
+        .btn-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+        }
+        .btn { 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            text-align: center; 
+            font-size: 13px; 
+        }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; }
         
-        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; flex-direction: column; font-size: 12px; }
-        .buy-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; }
+        .rank-item { 
+            background: #fffde7; 
+            margin-bottom: 5px; 
+            padding: 10px; 
+            border-radius: 8px; 
+            border: 1px solid #ffe0b2; 
+            display: flex; 
+            flex-direction: column; 
+            font-size: 12px; 
+        }
+        .buy-btn { 
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            border: none; 
+            background: #fbc02d; 
+            color: #5d4037; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
@@ -98,7 +238,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    function fNum(n) { return n < 1e6 ? Math.floor(n).toLocaleString() : (n/1e6).toFixed(1) + "M"; }
+    function fNum(n) { 
+        return n < 1e6 ? Math.floor(n).toLocaleString() : (n/1e6).toFixed(1) + "M"; 
+    }
 
     let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
     localStorage.setItem('chickenID', playerID);
@@ -109,6 +251,7 @@
         color: 'white', colorBonus: 1, ownedColors: ['white'],
         bg: 'default', bgBonus: 1, ownedBgs: ['default']
     };
+    
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -142,7 +285,6 @@
     };
 
     const renderLists = () => {
-        // Loja de Cores (Só mostra o que NÃO tem)
         const sList = document.getElementById('shop-list');
         sList.innerHTML = "";
         shopColors.forEach(c => {
@@ -151,7 +293,6 @@
             }
         });
 
-        // Inventário (Cores que já possui)
         const iList = document.getElementById('inventory-list');
         iList.innerHTML = "";
         data.ownedColors.forEach(id => {
@@ -159,7 +300,6 @@
             iList.innerHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>${name}</span><button class="buy-btn" style="background:#4caf50" onclick="equip('color','${id}')">${data.color === id ? 'USANDO' : 'EQUIPAR'}</button></div>`;
         });
 
-        // Loja de BGs
         const bList = document.getElementById('bg-list');
         bList.innerHTML = "";
         shopBgs.forEach(b => {
@@ -207,9 +347,21 @@
         if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto = data.auto === 0 ? 1 : data.auto * 2; data.autoCost *= 2; save(); }
     };
 
-    const save = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
+    const save = () => { 
+        localStorage.setItem('chickenSave', JSON.stringify(data)); 
+        updateUI(); 
+    };
 
-    // Firebase Sync e Ranking
+    const sync = () => {
+        setDoc(doc(db, "Admin", playerID), { 
+            name: document.getElementById('player-name').value || "Fazendeiro", 
+            score: data.totalClicks, 
+            id: playerID 
+        }, { merge: true });
+    };
+
+    document.getElementById('player-name').onchange = sync;
+
     onSnapshot(query(collection(db, "Admin"), orderBy("score", "desc"), limit(10)), (snap) => {
         const list = document.getElementById('rank-list');
         list.innerHTML = "";
@@ -219,25 +371,36 @@
         });
     });
 
-    onSnapshot(doc(db, "stats", "globalCounter"), (d) => { if(d.exists()) document.getElementById('global-total').innerText = fNum(d.data().total); });
+    onSnapshot(doc(db, "stats", "globalCounter"), (d) => { 
+        if(d.exists()) document.getElementById('global-total').innerText = fNum(d.data().total); 
+    });
 
-    setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * data.bgBonus); save(); } }, 1000);
-    setInterval(() => setDoc(doc(db, "Admin", playerID), { name: document.getElementById('player-name').value || "Fazendeiro", score: data.totalClicks, id: playerID }, { merge: true }), 60000);
+    setInterval(() => { 
+        if(data.auto > 0) { 
+            const gain = (data.auto * Math.pow(4, data.prestige) * data.colorBonus * data.bgBonus);
+            data.eggs += gain; 
+            data.totalClicks += gain; 
+            save(); 
+        } 
+    }, 1000);
+
+    setInterval(sync, 60000);
 
     const toggle = (id) => { 
         const el = document.getElementById(id); 
         const vis = el.style.display === 'block';
         document.querySelectorAll('.float-menu').forEach(m => m.style.display = 'none');
-        el.style.display = vis ? 'none' : 'block';
+        if(el) el.style.display = vis ? 'none' : 'block';
     };
 
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('inventory-btn').onclick = () => toggle('inventory-menu');
     document.getElementById('bg-shop-btn').onclick = () => toggle('bg-shop-menu');
-    document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
-    document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
 
-    window.onload = () => { document.getElementById('loadingScreen').style.display='none'; updateUI(); };
+    window.onload = () => { 
+        document.getElementById('loadingScreen').style.display='none'; 
+        updateUI(); 
+    };
 </script>
 </body>
- </html>
+    </html>
