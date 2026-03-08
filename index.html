@@ -37,7 +37,7 @@
         #btn-auto { background: #43a047; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
-        .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; }
+        .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; min-width: 60px; }
     </style>
 </head>
 <body>
@@ -68,11 +68,11 @@
 
 <div id="shop-menu" class="float-menu">
     <h4 style="font-size:14px; color:#f44336;">Loja de Cores</h4>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>⚪ Branca (1x)</span><button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟤 Marrom (2x)</span><button class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🔵 Azul (4x)</span><button class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟡 Ouro (8x)</span><button class="buy-color-btn" onclick="buyColor('gold', 400000, 8)">400k</button></div>
-    <div id="rainbow-item" style="display: none; justify-content:space-between;"><span>🌈 Rainbow (500x)</span><button class="buy-color-btn" onclick="buyColor('rainbow', 0, 500)">USAR</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>⚪ Branca (1x)</span><button id="btn-color-white" class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🟤 Marrom (2x)</span><button id="btn-color-brown" class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🔵 Azul (4x)</span><button id="btn-color-blue" class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🟡 Ouro (8x)</span><button id="btn-color-gold" class="buy-color-btn" onclick="buyColor('gold', 400000, 8)">400k</button></div>
+    <div id="rainbow-row" style="display:none; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🌈 Rainbow (20x)</span><button id="btn-color-rainbow" class="buy-color-btn" onclick="buyColor('rainbow', 1000000, 20)">1M</button></div>
 </div>
 
 <div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white"></div>
@@ -103,8 +103,7 @@
         if (n < 1e3) return Math.floor(n).toLocaleString();
         if (n < 1e6) return (n / 1e3).toFixed(1) + "k";
         if (n < 1e9) return (n / 1e6).toFixed(1) + "M";
-        if (n < 1e12) return (n / 1e9).toFixed(1) + "B";
-        return (n / 1e12).toFixed(1) + "T";
+        return (n / 1e9).toFixed(1) + "B";
     }
 
     let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
@@ -141,6 +140,15 @@
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
         
+        // Mostrar Rainbow apenas se tiver > 1M ovos
+        document.getElementById('rainbow-row').style.display = data.eggs >= 1000000 || data.ownedColors.includes('rainbow') ? 'flex' : 'none';
+
+        // Atualizar textos dos botões da loja
+        data.ownedColors.forEach(c => {
+            const btn = document.getElementById('btn-color-' + c);
+            if(btn) btn.innerText = "USAR";
+        });
+
         let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
         let mins = Math.floor(totalMs / 60000);
         let hours = Math.floor(mins / 60);
@@ -189,8 +197,16 @@
     };
 
     window.buyColor = (col, price, bonus) => {
-        if (data.ownedColors.includes(col)) { data.color = col; data.colorBonus = bonus; }
-        else if (data.eggs >= price) { data.eggs -= price; data.ownedColors.push(col); data.color = col; data.colorBonus = bonus; }
+        if (data.ownedColors.includes(col)) { 
+            data.color = col; 
+            data.colorBonus = bonus; 
+        }
+        else if (data.eggs >= price) { 
+            data.eggs -= price; 
+            data.ownedColors.push(col); 
+            data.color = col; 
+            data.colorBonus = bonus; 
+        }
         saveLocal();
     };
 
@@ -237,4 +253,4 @@
     };
 </script>
 </body>
- </html>
+    </html>
