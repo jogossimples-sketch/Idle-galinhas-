@@ -69,9 +69,9 @@
 <div id="shop-menu" class="float-menu">
     <h4 style="font-size:14px; color:#f44336;">Loja de Cores</h4>
     <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>⚪ Branca (1x)</span><button class="buy-color-btn" onclick="buyColor('white', 0, 1)">USAR</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟤 Marrom (5x)</span><button class="buy-color-btn" onclick="buyColor('brown', 500000, 5)">500k</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🔵 Azul (20x)</span><button class="buy-color-btn" onclick="buyColor('blue', 50000000, 20)">50M</button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟡 Ouro (100x)</span><button class="buy-color-btn" onclick="buyColor('gold', 5000000000, 100)">5B</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟤 Marrom (2x)</span><button class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🔵 Azul (4x)</span><button class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>🟡 Ouro (8x)</span><button class="buy-color-btn" onclick="buyColor('gold', 400000, 8)">400k</button></div>
     <div id="rainbow-item" style="display: none; justify-content:space-between;"><span>🌈 Rainbow (500x)</span><button class="buy-color-btn" onclick="buyColor('rainbow', 0, 500)">USAR</button></div>
 </div>
 
@@ -96,6 +96,7 @@
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const MY_ADMIN_ID = "CHICK-DJEU7";
     const BONUS_ID = "CHICK-SF36B"; 
 
     function fNum(n) {
@@ -103,8 +104,7 @@
         if (n < 1e6) return (n / 1e3).toFixed(1) + "k";
         if (n < 1e9) return (n / 1e6).toFixed(1) + "M";
         if (n < 1e12) return (n / 1e9).toFixed(1) + "B";
-        if (n < 1e15) return (n / 1e12).toFixed(1) + "T";
-        return (n / 1e15).toFixed(1) + "Qd";
+        return (n / 1e12).toFixed(1) + "T";
     }
 
     let playerID = localStorage.getItem('chickenID') || ("CHICK-" + Math.random().toString(36).substr(2, 5).toUpperCase());
@@ -151,13 +151,11 @@
             document.getElementById('prestige-target').innerText = fNum(targets[data.prestige]);
             document.getElementById('btn-prestige').style.display = data.totalClicks >= targets[data.prestige] ? 'block' : 'none';
         }
+        if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
     const syncWithServer = async () => {
-        // Envia seus dados (não gasta leitura, apenas escrita)
         await setDoc(doc(db, "Admin", playerID), { name: playerName, score: Math.trunc(Number(data.totalClicks)), id: playerID }, { merge: true });
-        
-        // BAIXA O RANKING (SÓ AQUI CONSOME CRÉDITOS)
         try {
             const q = query(collection(db, "Admin"), orderBy("score", "desc"), limit(10));
             const snap = await getDocs(q);
@@ -207,8 +205,7 @@
     window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
         updateUI(); 
-        showCachedRank(); // MOSTRA O RANKING SALVO SEM GASTAR CRÉDITOS
-        
+        showCachedRank(); 
         setInterval(() => { 
             if(data.auto > 0) { 
                 let mult = (playerID === BONUS_ID) ? 200 : 1;
@@ -216,8 +213,6 @@
                 saveLocal(); 
             } 
         }, 1000);
-        
-        // SÓ FAZ A PRIMEIRA CONEXÃO APÓS 60 SEGUNDOS (Economia máxima)
         setInterval(syncWithServer, 60000);
     });
 
@@ -235,6 +230,11 @@
     document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto++; data.autoCost = Math.floor(data.autoCost * 2.2); saveLocal(); } };
     document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 250; data.autoCost = 100; saveLocal(); syncWithServer(); } };
 
+    window.adminBanAction = async () => {
+        if (playerID !== MY_ADMIN_ID) return;
+        const target = prompt("ID para banir:");
+        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); }
+    };
 </script>
 </body>
-        </html>
+ </html>
