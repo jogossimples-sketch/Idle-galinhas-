@@ -14,17 +14,22 @@
         #stats-container { text-align: center; margin: 10px; }
         #prestige-info { font-size: 14px; color: #f57f17; font-weight: bold; margin-bottom: 5px; }
         #stats { font-size: 35px; font-weight: bold; color: #5d4037; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
         .icon-btn { position: absolute; width: 45px; height: 45px; cursor: pointer; z-index: 100; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #ddd; font-size: 24px; border: 2px solid #ccc; }
         #settings-btn { top: 50px; right: 15px; }
         #shop-btn { top: 110px; right: 15px; border-color: #f44336; color: #f44336; }
         #profile-btn { top: 170px; right: 15px; border-color: #0288d1; color: #0288d1; }
-        #admin-btn { top: 230px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
+        #gacha-btn { top: 50px; left: 15px; border-color: #ff9800; color: #ff9800; } /* NOVO BOTÃO ESQUERDA */
+        #admin-btn { top: 110px; left: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
+
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
-        
-        /* CONTAINER DA GALINHA E ACESSÓRIO */
+        .left-menu { right: auto; left: 70px; border-color: #ff9800; }
+
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
-        #accessory-display { position: absolute; top: 15px; font-size: 50px; z-index: 3; pointer-events: none; transition: transform 0.1s; }
+        
+        /* AJUSTE DO ACESSÓRIO NA CABEÇA */
+        #accessory-display { position: absolute; top: 10px; font-size: 45px; z-index: 3; pointer-events: none; transition: transform 0.1s; transform: translateY(0); }
         
         .color-white { filter: none; }
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
@@ -41,13 +46,12 @@
         .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
-        #btn-box { background: #ff9800; grid-column: span 2; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
         
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; flex-direction: column; font-size: 12px; }
         .rank-info { display: flex; justify-content: space-between; align-items: center; }
         .rank-id { font-size: 9px; color: #999; margin-top: 2px; }
-        .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; min-width: 60px; }
+        .gacha-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; padding: 5px; background: #fff3e0; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -59,13 +63,23 @@
 <div id="stats-container">
     <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
     <div id="stats">🥚 <span id="eggs">0</span></div>
-    <div id="accessory-name" style="font-size: 10px; color: #777; margin-top: 2px;">Nenhum Acessório</div>
+    <div id="accessory-name" style="font-size: 10px; color: #777; margin-top: 2px;">Sem Acessório</div>
 </div>
 
+<div id="gacha-btn" class="icon-btn">🎁</div>
 <div id="settings-btn" class="icon-btn">⚙️</div>
 <div id="shop-btn" class="icon-btn">🛒</div>
 <div id="profile-btn" class="icon-btn">📊</div>
 <div id="admin-btn" class="icon-btn" onclick="adminBanAction()">🚫</div>
+
+<div id="gacha-menu" class="float-menu left-menu">
+    <h4 style="color: #ff9800; text-align: center; margin-top:0;">📦 LOJA DE CAIXAS</h4>
+    <div class="gacha-item"><span>🕶️ Óculos (1.2x)</span> <b>60%</b></div>
+    <div class="gacha-item"><span>🤠 Chapéu (2x)</span> <b>30%</b></div>
+    <div class="gacha-item"><span>👑 Coroa (5x)</span> <b>9%</b></div>
+    <div class="gacha-item"><span>🔥 Aura (15x)</span> <b>1%</b></div>
+    <button class="btn" id="btn-open-box" style="background:#ff9800; width:100%; margin-top:10px;">ABRIR CAIXA (5k)</button>
+</div>
 
 <div id="player-profile-menu" class="float-menu">
     <h4 style="color: #f57f17; text-align: center;">📊 SEU PERFIL</h4>
@@ -83,7 +97,6 @@
     <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🟤 Marrom (2x)</span><button id="btn-color-brown" class="buy-color-btn" onclick="buyColor('brown', 50000, 2)">50k</button></div>
     <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🔵 Azul (4x)</span><button id="btn-color-blue" class="buy-color-btn" onclick="buyColor('blue', 150000, 4)">150k</button></div>
     <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🟡 Ouro (8x)</span><button id="btn-color-gold" class="buy-color-btn" onclick="buyColor('gold', 400000, 8)">400k</button></div>
-    <div id="rainbow-row" style="display:none; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🌈 Rainbow (20x)</span><button id="btn-color-rainbow" class="buy-color-btn" onclick="buyColor('rainbow', 1000000, 20)">1M</button></div>
 </div>
 
 <div id="chicken-container">
@@ -96,7 +109,6 @@
     <div style="text-align: center; font-size: 9px; color: #999; margin-top: 4px;">ID: <span id="display-id">...</span></div>
     <div class="btn-grid">
         <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">1M</span></button>
-        <button class="btn" id="btn-box">🎁 ABRIR CAIXA<br>🥚 5k</button>
         <button class="btn" id="btn-click">💪 SUPER DEDO (2x)<br>🥚 <span id="click-cost">100</span></button>
         <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE (2x)<br>🥚 <span id="auto-cost">50</span></button>
     </div>
@@ -126,7 +138,6 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    // DATA BASE COM ACESSÓRIOS
     let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0, accessory: null, accessoryBonus: 1, accessoryName: "Nenhum" };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
@@ -170,8 +181,7 @@
         document.getElementById('chicken').className = "color-" + data.color;
         document.getElementById('accessory-display').innerText = data.accessory || "";
         document.getElementById('accessory-name').innerText = "Acessório: " + data.accessoryName + " (" + data.accessoryBonus + "x)";
-        document.getElementById('rainbow-row').style.display = data.eggs >= 1000000 || data.ownedColors.includes('rainbow') ? 'flex' : 'none';
-
+        
         data.ownedColors.forEach(c => {
             const btn = document.getElementById('btn-color-' + c);
             if(btn) btn.innerText = "USAR";
@@ -193,14 +203,12 @@
 
     document.getElementById('chicken').onclick = async (e) => {
         let mult = (playerID === BONUS_ID) ? 200 : 1;
-        // BÔNUS DO ACESSÓRIO INCLUÍDO NO CÁLCULO
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * data.accessoryBonus * mult;
         data.eggs += gain; data.totalClicks += gain;
         updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }).catch(()=>{});
         
-        // EFEITO VISUAL DE CLIQUE
         document.getElementById('chicken').style.transform = "scale(0.9)";
-        document.getElementById('accessory-display').style.transform = "scale(0.9) translateY(5px)";
+        document.getElementById('accessory-display').style.transform = "scale(0.9) translateY(4px)";
         setTimeout(() => {
             document.getElementById('chicken').style.transform = "scale(1)";
             document.getElementById('accessory-display').style.transform = "scale(1)";
@@ -214,16 +222,15 @@
         saveLocal();
     };
 
-    // SISTEMA DE CAIXA (GACHA)
-    document.getElementById('btn-box').onclick = () => {
-        if (data.eggs < 5000) return alert("Você precisa de 5.000 ovos!");
+    // LOGICA DO GACHA
+    document.getElementById('btn-open-box').onclick = () => {
+        if (data.eggs < 5000) return alert("Ovos insuficientes!");
         data.eggs -= 5000;
         const r = Math.random() * 100;
-        if (r < 1) { data.accessory = "🔥"; data.accessoryBonus = 15; data.accessoryName = "Aura Lendária"; }
-        else if (r < 10) { data.accessory = "👑"; data.accessoryBonus = 5; data.accessoryName = "Coroa de Rei"; }
-        else if (r < 40) { data.accessory = "🤠"; data.accessoryBonus = 2; data.accessoryName = "Chapéu Raro"; }
-        else { data.accessory = "🕶️"; data.accessoryBonus = 1.2; data.accessoryName = "Óculos Comum"; }
-        alert("Você ganhou: " + data.accessoryName + "!");
+        if (r < 1) { data.accessory = "🔥"; data.accessoryBonus = 15; data.accessoryName = "Aura"; }
+        else if (r < 10) { data.accessory = "👑"; data.accessoryBonus = 5; data.accessoryName = "Coroa"; }
+        else if (r < 40) { data.accessory = "🤠"; data.accessoryBonus = 2; data.accessoryName = "Chapéu"; }
+        else { data.accessory = "🕶️"; data.accessoryBonus = 1.2; data.accessoryName = "Óculos"; }
         saveLocal();
     };
 
@@ -245,13 +252,7 @@
         document.getElementById("loadingScreen").style.display = "none";
         initRealtime();
         updateUI(); 
-        setInterval(() => { 
-            if(data.auto > 0) { 
-                let mult = (playerID === BONUS_ID) ? 200 : 1;
-                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * data.accessoryBonus * mult); 
-                saveLocal(); 
-            } 
-        }, 1000);
+        setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * data.accessoryBonus); saveLocal(); } }, 1000);
         setInterval(syncPlayerData, 60000);
     });
 
@@ -259,17 +260,10 @@
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
-    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; syncPlayerData(); };
+    document.getElementById('gacha-btn').onclick = () => toggle('gacha-menu');
 
     document.getElementById('btn-click').onclick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower *= 2; data.clickCost = Math.floor(data.clickCost * 2.8); saveLocal(); } };
     document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; if(data.auto === 0) data.auto = 1; data.auto *= 2; data.autoCost = Math.floor(data.autoCost * 1.8); saveLocal(); } };
-    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 100; data.autoCost = 50; data.accessoryBonus = 1; data.accessory = null; saveLocal(); syncPlayerData(); } };
-
-    window.adminBanAction = async () => {
-        if (playerID !== MY_ADMIN_ID) return;
-        const target = prompt("ID para banir:");
-        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); }
-    };
 </script>
 </body>
-</html>
+    </html>
