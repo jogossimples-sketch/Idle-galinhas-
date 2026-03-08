@@ -20,23 +20,33 @@
         #profile-btn { top: 170px; right: 15px; border-color: #0288d1; color: #0288d1; }
         #admin-btn { top: 230px; right: 15px; display: none; background: #212121; color: #ff5252; border-color: #ff5252; }
         .float-menu { display: none; position: absolute; top: 100px; right: 70px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 101; border: 2px solid #fbc02d; min-width: 200px; }
+        
+        /* CONTAINER DA GALINHA E ACESSÓRIO */
         #chicken-container { height: 160px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
         #chicken { width: 120px; cursor: pointer; transition: transform 0.1s, filter 0.3s; -webkit-tap-highlight-color: transparent; z-index: 2; }
+        #accessory-display { position: absolute; top: 15px; font-size: 50px; z-index: 3; pointer-events: none; transition: transform 0.1s; }
+        
         .color-white { filter: none; }
         .color-brown { filter: sepia(1) saturate(2) hue-rotate(-30deg); }
         .color-blue { filter: hue-rotate(180deg) brightness(1.2); }
         .color-gold { filter: brightness(1.1) saturate(1.5) drop-shadow(0 0 8px gold); }
         .color-rainbow { animation: rainbow-anim 2s linear infinite; }
         @keyframes rainbow-anim { 0% { filter: hue-rotate(0deg) drop-shadow(0 0 10px red); } 33% { filter: hue-rotate(120deg) drop-shadow(0 0 10px green); } 66% { filter: hue-rotate(240deg) drop-shadow(0 0 10px blue); } 100% { filter: hue-rotate(360deg) drop-shadow(0 0 10px red); } }
+        
         .click-text { position: absolute; color: #f57f17; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 10; }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
+        
         #menu { background: white; width: 100%; flex-grow: 1; border-radius: 30px 30px 0 0; padding: 15px; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         #btn-click { background: #0288d1; }
         #btn-auto { background: #43a047; }
+        #btn-box { background: #ff9800; grid-column: span 2; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
-        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
+        
+        .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; flex-direction: column; font-size: 12px; }
+        .rank-info { display: flex; justify-content: space-between; align-items: center; }
+        .rank-id { font-size: 9px; color: #999; margin-top: 2px; }
         .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; min-width: 60px; }
     </style>
 </head>
@@ -49,6 +59,7 @@
 <div id="stats-container">
     <div id="prestige-info">🏅 Prestígio: <span id="prestige-lv">0</span>/3</div>
     <div id="stats">🥚 <span id="eggs">0</span></div>
+    <div id="accessory-name" style="font-size: 10px; color: #777; margin-top: 2px;">Nenhum Acessório</div>
 </div>
 
 <div id="settings-btn" class="icon-btn">⚙️</div>
@@ -75,13 +86,17 @@
     <div id="rainbow-row" style="display:none; justify-content:space-between; margin-bottom:8px; align-items: center;"><span>🌈 Rainbow (20x)</span><button id="btn-color-rainbow" class="buy-color-btn" onclick="buyColor('rainbow', 1000000, 20)">1M</button></div>
 </div>
 
-<div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white"></div>
+<div id="chicken-container">
+    <div id="accessory-display"></div>
+    <img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white">
+</div>
 
 <div id="menu">
     <input type="text" id="player-name" placeholder="Seu Nome" maxlength="15" style="width:100%; padding:10px; border-radius:10px; border:2px solid #fbc02d; text-align:center; font-weight:bold;">
     <div style="text-align: center; font-size: 9px; color: #999; margin-top: 4px;">ID: <span id="display-id">...</span></div>
     <div class="btn-grid">
         <button class="btn" id="btn-prestige">✨ PRESTÍGIO: <span id="prestige-target">1M</span></button>
+        <button class="btn" id="btn-box">🎁 ABRIR CAIXA<br>🥚 5k</button>
         <button class="btn" id="btn-click">💪 SUPER DEDO (2x)<br>🥚 <span id="click-cost">100</span></button>
         <button class="btn" id="btn-auto">👨‍🌾 AJUDANTE (2x)<br>🥚 <span id="auto-cost">50</span></button>
     </div>
@@ -111,7 +126,8 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0 };
+    // DATA BASE COM ACESSÓRIOS
+    let data = { eggs: 0, totalClicks: 0, auto: 0, clickPower: 1, autoCost: 50, clickCost: 100, prestige: 0, color: 'white', colorBonus: 1, ownedColors: ['white'], startTime: Date.now(), totalTimeMs: 0, accessory: null, accessoryBonus: 1, accessoryName: "Nenhum" };
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
@@ -123,11 +139,14 @@
         list.innerHTML = "";
         rankData.forEach((p, index) => {
             const crown = index === 0 ? "👑 " : "";
-            list.innerHTML += `<li class="rank-item"><b>${crown}${p.name}</b> <span>🥚 ${fNum(p.score)}</span></li>`;
+            list.innerHTML += `
+                <li class="rank-item">
+                    <div class="rank-info"><b>${crown}${p.name}</b> <span>🥚 ${fNum(p.score)}</span></div>
+                    <div class="rank-id">ID: #${p.id}</div>
+                </li>`;
         });
     }
 
-    // LISTENER EM TEMPO REAL PARA RANKING E GLOBAL
     const initRealtime = () => {
         onSnapshot(query(collection(db, "Admin"), orderBy("score", "desc"), limit(10)), (snap) => {
             let rankArr = [];
@@ -135,12 +154,9 @@
             localStorage.setItem('rankCache', JSON.stringify(rankArr));
             renderRankList(rankArr);
         });
-
         onSnapshot(doc(db, "stats", "globalCounter"), (doc) => {
             if(doc.exists()) {
-                const total = doc.data().total;
-                document.getElementById('global-total').innerText = fNum(total);
-                localStorage.setItem('globalCache', total);
+                document.getElementById('global-total').innerText = fNum(doc.data().total);
             }
         });
     };
@@ -152,21 +168,20 @@
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('chicken').className = "color-" + data.color;
+        document.getElementById('accessory-display').innerText = data.accessory || "";
+        document.getElementById('accessory-name').innerText = "Acessório: " + data.accessoryName + " (" + data.accessoryBonus + "x)";
         document.getElementById('rainbow-row').style.display = data.eggs >= 1000000 || data.ownedColors.includes('rainbow') ? 'flex' : 'none';
 
         data.ownedColors.forEach(c => {
             const btn = document.getElementById('btn-color-' + c);
             if(btn) btn.innerText = "USAR";
         });
-
-        let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
-        let mins = Math.floor(totalMs / 60000);
-        let hours = Math.floor(mins / 60);
-        document.getElementById('p-time').innerText = hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
         
-        const targets = [1000000, 100000000, 1000000000];
+        let totalMs = (data.totalTimeMs || 0) + (Date.now() - data.startTime);
+        document.getElementById('p-time').innerText = Math.floor(totalMs / 60000) + "m";
+
         if (data.prestige < 3) {
-            document.getElementById('prestige-target').innerText = fNum(targets[data.prestige]);
+            const targets = [1000000, 100000000, 1000000000];
             document.getElementById('btn-prestige').style.display = data.totalClicks >= targets[data.prestige] ? 'block' : 'none';
         }
         if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
@@ -178,14 +193,37 @@
 
     document.getElementById('chicken').onclick = async (e) => {
         let mult = (playerID === BONUS_ID) ? 200 : 1;
-        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * mult;
+        // BÔNUS DO ACESSÓRIO INCLUÍDO NO CÁLCULO
+        const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * data.accessoryBonus * mult;
         data.eggs += gain; data.totalClicks += gain;
         updateDoc(doc(db, "stats", "globalCounter"), { total: increment(Math.floor(gain)) }).catch(()=>{});
+        
+        // EFEITO VISUAL DE CLIQUE
+        document.getElementById('chicken').style.transform = "scale(0.9)";
+        document.getElementById('accessory-display').style.transform = "scale(0.9) translateY(5px)";
+        setTimeout(() => {
+            document.getElementById('chicken').style.transform = "scale(1)";
+            document.getElementById('accessory-display').style.transform = "scale(1)";
+        }, 50);
+
         if (document.getElementById('toggle-effects').checked) {
             const el = document.createElement('div'); el.className = 'click-text'; el.innerText = "+" + fNum(gain);
             el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px";
             document.body.appendChild(el); setTimeout(() => el.remove(), 600);
         }
+        saveLocal();
+    };
+
+    // SISTEMA DE CAIXA (GACHA)
+    document.getElementById('btn-box').onclick = () => {
+        if (data.eggs < 5000) return alert("Você precisa de 5.000 ovos!");
+        data.eggs -= 5000;
+        const r = Math.random() * 100;
+        if (r < 1) { data.accessory = "🔥"; data.accessoryBonus = 15; data.accessoryName = "Aura Lendária"; }
+        else if (r < 10) { data.accessory = "👑"; data.accessoryBonus = 5; data.accessoryName = "Coroa de Rei"; }
+        else if (r < 40) { data.accessory = "🤠"; data.accessoryBonus = 2; data.accessoryName = "Chapéu Raro"; }
+        else { data.accessory = "🕶️"; data.accessoryBonus = 1.2; data.accessoryName = "Óculos Comum"; }
+        alert("Você ganhou: " + data.accessoryName + "!");
         saveLocal();
     };
 
@@ -210,7 +248,7 @@
         setInterval(() => { 
             if(data.auto > 0) { 
                 let mult = (playerID === BONUS_ID) ? 200 : 1;
-                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * mult); 
+                data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus * data.accessoryBonus * mult); 
                 saveLocal(); 
             } 
         }, 1000);
@@ -221,28 +259,11 @@
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
-    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; localStorage.setItem('chickenName', playerName); syncPlayerData(); };
+    document.getElementById('player-name').onchange = (e) => { playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro"; syncPlayerData(); };
 
-    // UPGRADES COM PREÇOS BAIXOS E 2x
-    document.getElementById('btn-click').onclick = () => { 
-        if(data.eggs >= data.clickCost) { 
-            data.eggs -= data.clickCost; 
-            data.clickPower *= 2; 
-            data.clickCost = Math.floor(data.clickCost * 2.8); 
-            saveLocal(); 
-        } 
-    };
-    document.getElementById('btn-auto').onclick = () => { 
-        if(data.eggs >= data.autoCost) { 
-            data.eggs -= data.autoCost; 
-            if(data.auto === 0) data.auto = 1;
-            data.auto *= 2; 
-            data.autoCost = Math.floor(data.autoCost * 1.8); 
-            saveLocal(); 
-        } 
-    };
-    
-    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 100; data.autoCost = 50; saveLocal(); syncPlayerData(); } };
+    document.getElementById('btn-click').onclick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower *= 2; data.clickCost = Math.floor(data.clickCost * 2.8); saveLocal(); } };
+    document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; if(data.auto === 0) data.auto = 1; data.auto *= 2; data.autoCost = Math.floor(data.autoCost * 1.8); saveLocal(); } };
+    document.getElementById('btn-prestige').onclick = () => { if (data.totalClicks >= [1000000, 100000000, 1000000000][data.prestige]) { data.prestige++; data.eggs = 0; data.auto = 0; data.clickPower = 1; data.clickCost = 100; data.autoCost = 50; data.accessoryBonus = 1; data.accessory = null; saveLocal(); syncPlayerData(); } };
 
     window.adminBanAction = async () => {
         if (playerID !== MY_ADMIN_ID) return;
@@ -251,4 +272,4 @@
     };
 </script>
 </body>
-                                                                                                      </html>
+</html>
