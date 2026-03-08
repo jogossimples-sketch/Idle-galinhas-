@@ -245,7 +245,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot, query, collection, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot, query, collection, orderBy, limit, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", projectId: "chickentycoon" };
     const app = initializeApp(firebaseConfig);
@@ -373,8 +373,24 @@
         updateUI(); 
     };
 
-    const sync = () => {
-        setDoc(doc(db, "Admin", playerID), { 
+    // Função de sincronização melhorada: lê do Firebase ANTES de salvar o local
+    const sync = async () => {
+        const userRef = doc(db, "Admin", playerID);
+        const snap = await getDoc(userRef);
+
+        if (snap.exists()) {
+            const firebaseData = snap.data();
+            // Se o score no Firebase for MAIOR que o local, atualizamos o local para não perder os ovos dados pelo admin
+            if (firebaseData.score > data.totalClicks) {
+                const diff = firebaseData.score - data.totalClicks;
+                data.eggs += diff; // Adiciona os ovos novos ao saldo atual
+                data.totalClicks = firebaseData.score; // Ajusta o total
+                save();
+            }
+        }
+
+        // Agora sim, salva o estado atualizado no Firebase
+        setDoc(userRef, { 
             name: document.getElementById('player-name').value || "Fazendeiro", 
             score: data.totalClicks, 
             id: playerID 
@@ -405,13 +421,13 @@
         } 
     }, 1000);
 
-    // Timer persistente
     setInterval(() => {
         data.secondsOnline++;
         save(); 
     }, 1000);
 
-    setInterval(sync, 60000);
+    // Diminuído para 30 segundos para ser mais rápido
+    setInterval(sync, 30000);
 
     const toggle = (id) => { 
         const el = document.getElementById(id); 
@@ -428,7 +444,8 @@
     window.onload = () => { 
         document.getElementById('loadingScreen').style.display='none'; 
         updateUI(); 
+        sync(); // Sincroniza logo ao abrir para checar se o admin deu ovos
     };
 </script>
 </body>
-                                </html>
+    </html>
