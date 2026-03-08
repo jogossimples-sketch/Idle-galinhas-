@@ -126,7 +126,6 @@
             z-index: 2; 
         }
         
-        /* Galinha Dourada */
         #golden-chicken {
             position: absolute;
             width: 60px;
@@ -198,10 +197,28 @@
             font-size: 14px;
         }
 
-        /* Estilos do Chat */
-        #chat-box { height: 120px; overflow-y: auto; background: #fdfdfd; border: 1px solid #eee; border-radius: 10px; padding: 8px; font-size: 12px; margin-top: 5px; border: 1px solid #fbc02d; }
-        #chat-input-container { display: flex; gap: 5px; margin-top: 5px; }
-        #chat-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 8px; padding: 5px 10px; outline: none; }
+        /* --- DESIGN DO CHAT AMPLIADO --- */
+        #chat-box { 
+            height: 250px; 
+            overflow-y: auto; 
+            background: #fafafa; 
+            border: 2px solid #fbc02d; 
+            border-radius: 12px; 
+            padding: 10px; 
+            font-size: 13px; 
+            margin-top: 5px; 
+            line-height: 1.4;
+        }
+        #chat-input-container { display: flex; gap: 5px; margin-top: 8px; }
+        #chat-input { 
+            flex-grow: 1; 
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            padding: 10px; 
+            outline: none; 
+            font-size: 14px;
+        }
+        #chat-input:focus { border-color: #fbc02d; }
     </style>
 </head>
 <body>
@@ -236,9 +253,8 @@
 <div id="bg-shop-menu" class="float-menu left-menu">
     <h4 style="color:#ff9800; text-align: center; margin: 0 0 10px 0;">🖼️ PAPÉIS DE PAREDE</h4>
     <div id="bg-list"></div>
-</div>
-
-<div id="stats-menu" class="float-menu">
+    </div>
+ <div id="stats-menu" class="float-menu">
     <h4 style="color:#0288d1; text-align: center; margin: 0 0 10px 0;">📊 ESTATÍSTICAS</h4>
     <div class="stat-line"><span>Total de Ovos:</span> <b id="stat-total-eggs">0</b></div>
     <div class="stat-line"><span>Tempo Online:</span> <b id="stat-online-time">00:00:00</b></div>
@@ -256,11 +272,11 @@
         <button class="btn" id="btn-auto" style="background:#43a047;">👨‍🌾 AJUDANTE<br>🥚 <span id="auto-cost">50</span></button>
     </div>
 
-    <h3 style="margin-top: 15px; font-size: 16px;">💬 CHAT GLOBAL</h3>
+    <h3 style="margin-top: 15px; font-size: 16px;">💬 CHAT ONLINE</h3>
     <div id="chat-box"></div>
     <div id="chat-input-container">
-        <input type="text" id="chat-input" placeholder="Diga algo..." maxlength="50">
-        <button id="btn-send-chat" style="background:#fbc02d; border:none; border-radius:8px; padding:5px 12px; font-weight:bold; cursor:pointer;">ENVIAR</button>
+        <input type="text" id="chat-input" placeholder="Escreva uma mensagem..." maxlength="50">
+        <button id="btn-send-chat" style="background:#fbc02d; border:none; border-radius:10px; padding:5px 15px; font-weight:bold; cursor:pointer; color:#5d4037;">ENVIAR</button>
     </div>
 
     <h3 style="margin-top: 15px; font-size: 16px;">🏆 RANKING GLOBAL</h3>
@@ -353,7 +369,6 @@
 
     const save = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
 
-    // CLIQUE MANUAL
     document.getElementById('chicken').onclick = () => {
         const gain = data.clickPower * Math.pow(4, data.prestige) * data.colorBonus * data.bgBonus;
         data.eggs += gain; data.totalClicks += gain;
@@ -361,7 +376,6 @@
         save();
     };
 
-    // --- CHAT GLOBAL ---
     const chatRef = collection(db, "Messages");
     const sendChat = async () => {
         const msgText = document.getElementById('chat-input').value.trim();
@@ -369,14 +383,21 @@
         await addDoc(chatRef, { sender: data.name, text: msgText, timestamp: serverTimestamp(), id: playerID });
         document.getElementById('chat-input').value = "";
     };
+
     document.getElementById('btn-send-chat').onclick = sendChat;
-    onSnapshot(query(chatRef, orderBy("timestamp", "asc"), limitToLast(15)), (snap) => {
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChat();
+    });
+
+    onSnapshot(query(chatRef, orderBy("timestamp", "asc"), limitToLast(30)), (snap) => {
         const box = document.getElementById('chat-box'); box.innerHTML = "";
-        snap.forEach(d => { const m = d.data(); box.innerHTML += `<div><b style="color:${m.id===playerID?'#0288d1':'#5d4037'}">${m.sender}:</b> ${m.text}</div>`; });
+        snap.forEach(d => { 
+            const m = d.data(); 
+            box.innerHTML += `<div style="margin-bottom:5px;"><b style="color:${m.id===playerID?'#0288d1':'#5d4037'}">${m.sender}:</b> ${m.text}</div>`; 
+        });
         box.scrollTop = box.scrollHeight;
     });
 
-    // --- GALINHA DOURADA ---
     const gChicken = document.getElementById('golden-chicken');
     function spawnGolden() {
         if (Math.random() > 0.7) { 
@@ -396,7 +417,6 @@
     };
     setInterval(spawnGolden, 60000);
 
-    // BOTÕES DE UPGRADE
     document.getElementById('btn-click').onclick = () => { if(data.eggs >= data.clickCost) { data.eggs -= data.clickCost; data.clickPower *= 2; data.clickCost *= 3; save(); } };
     document.getElementById('btn-auto').onclick = () => { if(data.eggs >= data.autoCost) { data.eggs -= data.autoCost; data.auto = data.auto === 0 ? 1 : data.auto * 2; data.autoCost *= 2; save(); } };
 
@@ -434,4 +454,4 @@
     window.onload = () => { document.getElementById('loadingScreen').style.display='none'; updateUI(); sync(); };
 </script>
 </body>
-    </html>
+    </html>   
