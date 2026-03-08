@@ -224,7 +224,7 @@
 <div id="stats-menu" class="float-menu">
     <h4 style="color:#0288d1; text-align: center; margin: 0 0 10px 0;">📊 ESTATÍSTICAS</h4>
     <div class="stat-line"><span>Total de Ovos:</span> <b id="stat-total-eggs">0</b></div>
-    <div class="stat-line"><span>Tempo Online:</span> <b id="stat-online-time">00:00</b></div>
+    <div class="stat-line"><span>Tempo Online:</span> <b id="stat-online-time">00:00:00</b></div>
 </div>
 
 <div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white"></div>
@@ -259,11 +259,11 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
-    let secondsOnline = 0;
     let data = { 
         eggs: 0, totalClicks: 0, clickPower: 1, auto: 0, clickCost: 100, autoCost: 50, prestige: 0,
         color: 'white', colorBonus: 1, ownedColors: ['white'],
-        bg: 'default', bgBonus: 1, ownedBgs: ['default']
+        bg: 'default', bgBonus: 1, ownedBgs: ['default'],
+        secondsOnline: 0
     };
     
     const saved = localStorage.getItem('chickenSave');
@@ -290,9 +290,11 @@
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('chicken').className = "color-" + data.color;
         
-        const m = Math.floor(secondsOnline / 60);
-        const s = secondsOnline % 60;
-        document.getElementById('stat-online-time').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        const h = Math.floor(data.secondsOnline / 3600);
+        const m = Math.floor((data.secondsOnline % 3600) / 60);
+        const s = data.secondsOnline % 60;
+        document.getElementById('stat-online-time').innerText = 
+            `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 
         const targets = [1e6, 1e8, 1e9];
         if(data.prestige < 3) {
@@ -403,9 +405,10 @@
         } 
     }, 1000);
 
+    // Timer persistente
     setInterval(() => {
-        secondsOnline++;
-        updateUI();
+        data.secondsOnline++;
+        save(); 
     }, 1000);
 
     setInterval(sync, 60000);
@@ -428,4 +431,4 @@
     };
 </script>
 </body>
-        </html>
+                                </html>
