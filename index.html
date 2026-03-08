@@ -180,6 +180,13 @@
             font-weight: bold; 
             cursor: pointer; 
         }
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -214,6 +221,12 @@
     <div id="bg-list"></div>
 </div>
 
+<div id="stats-menu" class="float-menu">
+    <h4 style="color:#0288d1; text-align: center; margin: 0 0 10px 0;">📊 ESTATÍSTICAS</h4>
+    <div class="stat-line"><span>Total de Ovos:</span> <b id="stat-total-eggs">0</b></div>
+    <div class="stat-line"><span>Tempo Online:</span> <b id="stat-online-time">00:00</b></div>
+</div>
+
 <div id="chicken-container"><img id="chicken" src="https://cdn-icons-png.flaticon.com/512/2632/2632839.png" class="color-white"></div>
 
 <div id="menu">
@@ -246,6 +259,7 @@
     localStorage.setItem('chickenID', playerID);
     document.getElementById('display-id').innerText = playerID;
 
+    let secondsOnline = 0;
     let data = { 
         eggs: 0, totalClicks: 0, clickPower: 1, auto: 0, clickCost: 100, autoCost: 50, prestige: 0,
         color: 'white', colorBonus: 1, ownedColors: ['white'],
@@ -270,11 +284,16 @@
 
     const updateUI = () => {
         document.getElementById('eggs').innerText = fNum(data.eggs);
+        document.getElementById('stat-total-eggs').innerText = fNum(data.totalClicks);
         document.getElementById('prestige-lv').innerText = data.prestige;
         document.getElementById('click-cost').innerText = fNum(data.clickCost);
         document.getElementById('auto-cost').innerText = fNum(data.autoCost);
         document.getElementById('chicken').className = "color-" + data.color;
         
+        const m = Math.floor(secondsOnline / 60);
+        const s = secondsOnline % 60;
+        document.getElementById('stat-online-time').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
         const targets = [1e6, 1e8, 1e9];
         if(data.prestige < 3) {
             document.getElementById('prestige-target').innerText = fNum(targets[data.prestige]);
@@ -384,6 +403,11 @@
         } 
     }, 1000);
 
+    setInterval(() => {
+        secondsOnline++;
+        updateUI();
+    }, 1000);
+
     setInterval(sync, 60000);
 
     const toggle = (id) => { 
@@ -396,6 +420,7 @@
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('inventory-btn').onclick = () => toggle('inventory-menu');
     document.getElementById('bg-shop-btn').onclick = () => toggle('bg-shop-menu');
+    document.getElementById('profile-btn').onclick = () => toggle('stats-menu');
 
     window.onload = () => { 
         document.getElementById('loadingScreen').style.display='none'; 
@@ -403,4 +428,4 @@
     };
 </script>
 </body>
-    </html>
+        </html>
