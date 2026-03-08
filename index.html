@@ -38,7 +38,6 @@
         #btn-auto { background: #43a047; }
         #btn-prestige { background: #9c27b0; grid-column: span 2; display: none; animation: pulse 1.5s infinite; }
         .rank-item { background: #fffde7; margin-bottom: 5px; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; display: flex; justify-content: space-between; font-size: 12px; align-items: center; }
-        .rank-id { font-size: 9px; color: #999; display: block; }
         .buy-color-btn { padding: 5px 10px; border-radius: 5px; border: none; background: #fbc02d; color: #5d4037; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -56,7 +55,7 @@
 <div id="settings-btn" class="icon-btn">⚙️</div>
 <div id="shop-btn" class="icon-btn">🛒</div>
 <div id="profile-btn" class="icon-btn">📊</div>
-<div id="admin-btn" class="icon-btn">🚫</div>
+<div id="admin-btn" class="icon-btn" onclick="adminBanAction()">🚫</div>
 
 <div id="player-profile-menu" class="float-menu">
     <h4 style="color: #f57f17; text-align: center;">📊 SEU PERFIL</h4>
@@ -93,7 +92,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit, increment, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyBzMMXyLG1GfN4OwjeJKboRN7V0-yXfOms", authDomain: "chickentycoon.firebaseapp.com", projectId: "chickentycoon", storageBucket: "chickentycoon.firebasestorage.app", messagingSenderId: "531618471959", appId: "1:531618471959:web:5484bbd6dcca21e102462e" };
     const app = initializeApp(firebaseConfig);
@@ -117,6 +116,10 @@
     const saved = localStorage.getItem('chickenSave');
     if(saved) Object.assign(data, JSON.parse(saved));
 
+    // Carregar nome salvo corretamente
+    let playerName = localStorage.getItem('chickenName') || "Fazendeiro";
+    document.getElementById('player-name').value = playerName;
+
     const updateUI = () => {
         document.getElementById('eggs').innerText = fNum(data.eggs);
         document.getElementById('p-total').innerText = fNum(data.totalClicks);
@@ -133,35 +136,17 @@
         if (playerID === MY_ADMIN_ID) document.getElementById('admin-btn').style.display = 'flex';
     };
 
-    // CORREÇÃO: SINCRONIZAÇÃO QUE BAIXA DADOS DO SERVIDOR SE FOREM MAIORES
     const syncWithServer = async () => {
-        const docRef = doc(db, "Admin", playerID);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            const serverScore = docSnap.data().score || 0;
-            // Se o servidor tiver mais pontos, atualiza o local para evitar reset
-            if (serverScore > data.totalClicks) {
-                data.totalClicks = serverScore;
-                if (data.eggs < serverScore) data.eggs = serverScore;
-                saveLocal();
-            }
-        }
-
         const score = Math.trunc(Number(data.totalClicks));
-        await setDoc(docRef, { 
-            name: localStorage.getItem('chickenName') || "Fazendeiro", 
-            score: score, 
-            id: playerID 
-        }, { merge: true });
+        await setDoc(doc(db, "Admin", playerID), { name: playerName, score: score, id: playerID }, { merge: true });
         
-        // Atualiza Global (Opcional, se existir documento stats/globalCounter)
-        try {
-            const globalRef = doc(db, "stats", "globalCounter");
-            const gSnap = await getDoc(globalRef);
-            if(gSnap.exists()) document.getElementById('global-total').innerText = fNum(gSnap.data().total);
-        } catch(e){}
-
+        // Atualizar Contador Mundial sem travar
+        const globalRef = doc(db, "stats", "globalCounter");
+        const gSnap = await getDoc(globalRef);
+        if(gSnap.exists()) {
+            document.getElementById('global-total').innerText = fNum(gSnap.data().total);
+        }
+        
         loadRanking();
     };
 
@@ -213,11 +198,10 @@
 
     const saveLocal = () => { localStorage.setItem('chickenSave', JSON.stringify(data)); updateUI(); };
 
-    window.addEventListener('load', async () => {
+    window.addEventListener('load', () => {
         document.getElementById("loadingScreen").style.display = "none";
-        // Primeiro tenta baixar o progresso do servidor antes de começar o jogo
-        await syncWithServer();
-        updateUI();
+        updateUI(); 
+        syncWithServer(); // Sincroniza logo ao abrir para carregar nome e global
         setInterval(() => { if(data.auto > 0) { data.eggs += (data.auto * Math.pow(4, data.prestige) * data.colorBonus); saveLocal(); } }, 1000);
         setInterval(syncWithServer, 60000);
     });
@@ -226,7 +210,19 @@
     document.getElementById('shop-btn').onclick = () => toggle('shop-menu');
     document.getElementById('settings-btn').onclick = () => toggle('settings-menu');
     document.getElementById('profile-btn').onclick = () => toggle('player-profile-menu');
-    document.getElementById('player-name').onchange = (e) => { localStorage.setItem('chickenName', e.target.value); syncWithServer(); };
+    
+    // CORREÇÃO DEFINITIVA DO NOME
+    document.getElementById('player-name').onchange = (e) => { 
+        playerName = e.target.value.trim().substring(0, 15) || "Fazendeiro";
+        localStorage.setItem('chickenName', playerName); 
+        syncWithServer(); 
+    };
+
+    window.adminBanAction = async () => {
+        if (playerID !== MY_ADMIN_ID) return;
+        const target = prompt("ID para banir:");
+        if (target && confirm("Banir #" + target + "?")) { await deleteDoc(doc(db, "Admin", target)); loadRanking(); }
+    };
 </script>
 </body>
-    </html>
+        </html>
